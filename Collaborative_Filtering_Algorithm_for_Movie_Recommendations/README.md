@@ -1,7 +1,7 @@
 # Collaborative Filtering Algorithm for Movie Recommendations
 ## Objective
 
-The main objective of this personal project is to build a movie recommender system using collaborative filtering algorithm. The dataset being used in this project is taken from [MovieLens 100K](https://grouplens.org/datasets/movielens/) datasets. The datasets first need to be cleaned up and manipulated before the algorthm can be applied. At the end, the movie recommendation based on user's rating on different set of movies will be shown.
+The main objective of this personal project is to build a movie recommender system using collaborative filtering algorithm. The dataset being used in this project is taken from [MovieLens 100K](https://grouplens.org/datasets/movielens/) datasets. The datasets first need to be cleaned up and manipulated before the algorithm can be applied. At the end, the movie recommendation based on user's rating on different set of movies will be shown.
 
 ## Files
 There are five files in this project, consist of two Python files, two Text files, and one Jupyter Notebook file.
