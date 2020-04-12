@@ -14,7 +14,7 @@ os.getcwd()
 
 #Read the dataframe with pandas
 
-dataFrame = pd.read_csv('ExampleData.txt',names=["CityPop", "RestaurantProfit"])
+dataFrame = pd.read_csv('RestaurantData.txt',names=["CityPop", "RestaurantProfit"])
 
 xData = dataFrame["CityPop"].tolist()
 yData = dataFrame["RestaurantProfit"].tolist()
