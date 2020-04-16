@@ -1,0 +1,518 @@
+---
+title: "Exploratory Data Analysis of the Influence of Employment Status and Level of Income on US Resident's Mental Well-Being"
+output:
+  html_document:
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+  pdf_document: default
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The purpose of this project is to perform Exploratory Data Analysis (EDA) with the datasets gathered from the Behavioral Risk Factor Surveillance System regarding the health of United States residents. Specifically, the investigation will be focused on the influence of employment status and resident's level of income on their general mental well-being.
+
+***************************************************************************************************
+
+## About the Data
+
+The data used for this data analysis is taken from the Behavioral Risk Factor Surveillance System or often abbreviated as BRFSS in 2013. BRFSS is a premier system of health-related telephone survey accross different states in the United States (US). The survey is intended to collect the data of various health-related risk behaviors and chronic health conditions amoung US residents. The end goal of BRFSS is to promote and to build healthy habits around the US with cooperation and sponsorship from the CDC. Annually, they conduct more than 400,000 adult interviews each year, making them the largest health survey system in the world.
+
+In order to conduct the survey, landline or cellular telephone interview usually takes place. The questions are very specific and standardized in-and-around respondents lifestyle, risk behavior factors, and health conditions. The data gathered from the respondents then will be forwarded to the CDC to be aggregated according to the state of the respondents.
+
+In total, there are 491,775 respondents, with 330 different set of features.
+
+***************************************************************************************************
+## Scope of Inference
+
+Given the size of the data gathered from BRFSS that consist of around 400,000 adult respondents in each year, we could agree that the result of the data is pretty much robust and can be generalized. However, looking at how the sample is gathered, i.e via telephone interviews, it is no secret that there will be a lot of sources of bias that can be generated. Different sources of the bias that migh occur with this sampling method including:
+
+1. **Convenience sample**: it is no secret that people with healthy lifestyle are much more approachable compared to people with bad lifestyle habits like drug or alcohol consumers. Hence, it would be no surprise that the majority of the respondents come from people with healthy lifestyle.
+2. **Non-reponse sample**: usually the question regarding self health conditions and lifestyle habits is a very sensitive topic and not a lot of people will be comfortable to answer such question. Hence, we can expect that although people have a bad habits like heavy addiction to drug or alcohol, they would likely to give different answer when people ask them such questions. In other words, the data that has been gathered might be no longer the representative of the population.
+
+##### Causality of the data
+
+As stated above, the BRFSS used telephone interviews to gather data. It means that they were conducting an observation rather than an experiment. Hence, it can be concluded that any data that has been gathered can be used to draw an association between design variables and response, but can't be used to draw causation.
+
+**************************************************************************************************
+
+## Problem Descriptions
+
+There are three main questions that will be addressed in this project utilizing the datasets from BRFSS. These questions are:
+
+1. There are  assumptions out there that the more people delve into their job, the harder their chance to find a perfect balance in their life, hence anxiety and depression increased. However on the flip side, people who are unemployed will also feel depressed and anxious because they don't have a steady income. It is interesting to investigate which hypothesis holds more weight among US residents. 
+2. Based on the finding in point 1, what about the income level of each person? Will the finding be similar compared to what we found in the problem 1? Does the income level has any correlation on the anxiety and depression level of the residents?  It is interesting to find out whether the financial status of the residents has any correlation with their overall mental well-being. However, for this observation, the investigation will be based on people with fulltime employment and people who are unemployed.
+3. Based on the finding in point 2, is it true that people with high level of income have greater risk of developing mental-related health condition compared to people with average income? If it happens to be true, what might be the possible explanatory variables? It will be interesting to find out few factors that might be the root cause of mental-related health condition amoung US residents with high level of income.
+
+**************************************************************************************************
+
+## Setup the Packages and Load the Data
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(knitr)
+library(dplyr)
+library(reshape2)
+library(tidyr)
+library(statsr)
+library(lattice)
+library(stringr)
+library(gridExtra)
+library(tidyselect)
+```
+```{r load-data}
+load("brfss2013.RData")
+```
+
+First, let's check different set of features in this dataset.
+```{r}
+names(brfss2013)
+```
+
+As we have seen above, in total there are 330 features from the dataset. Each of the feature's description can be found https://d3c33hcgiwev3.cloudfront.net/_e34476fda339107329fc316d1f98e042_brfss_codebook.html. 
+
+**************************************************************************************************
+## Problem I
+
+Now let's do the investigation to prove whether the initial hypothesis, in which there might be an association between someone's employment status to their sleeping pattern, anxiety level, and mental health issue, is true. In order to do this, let's fetch some useful informations from the dataset, which is employment status 'employ1',  how much time does somebody sleep 'sleptim1', number of days in a month where they feel their mental condition is not in a good shape 'menthlth' and the number of days in a month that someone feeling anxious 'qlstres2'.
+
+As the first step, let's check what is inside the employment status dataset.
+
+```{r}
+brfss2013 %>%
+  group_by(employ1) %>%
+  summarise( n = n())
+
+```
+
+From the summary above, it can be seen that there are eight categories in the employment status, with 3386 rows categorized as 'NA', which means that the respondents didn't answer this question. Now let's take a look at the people's sleep duration.
+
+```{r}
+
+brfss2013 %>%
+  group_by(sleptim1) %>%
+  summarise( n = n())
+
+```
+
+If we take a closer look at the data regarding the duration of the sleep, it seems like the variable of the duration is measured in hour. However, there are more than 7387 cases where the respondents didn't fill the answer. Also there are couple of outliers and strange result that could heavily alter the result, as there is one person with sleeping duration of 103 hours and one person with sleeping duration of 450 hours. We need to drop this data in order to remove the skewness of the distributions.
+
+Now let's take a look at the data regarding depression rate of the respondents.
+
+```{r}
+brfss2013 %>%
+  group_by(misdeprd) %>%
+  summarise( n = n())
+```
+From the data above, we can see that there are five different categories to classify the level of depression that people feel in a month. However, there are also 455669 respodents who didn't give the answer and we need to clear these data out in order to get a meaningful result.
+
+Now let's take a look at the number of days in a month people are feeling anxious.
+
+```{r}
+brfss2013 %>%
+  group_by(qlstres2) %>%
+  summarise( n = n())
+```
+Same as the data from sleeping duration, there are around 491288 of respondents who didn't fill the answer and there is one strange result, in which there is one person who feels anxious just once in 171 days. We need to clean these data out first. We need to filter out all of the variables which contain 'NA'.
+
+Last, let's check how often in a month the respondents feel like their mental health is not in a good condition.
+```{r}
+brfss2013 %>%
+  group_by(menthlth) %>%
+  summarise( n = n())
+```
+Same as the dataset that we have observed before, we have 8627 respondents that didn't answer this type of question. Also, there are couple of outliers that will heavily alter the result, in which there is one respondent who feels that they are in a bad mental shape 5000 and 247 times in a month. We need to clear this data out in the next step.
+
+Next, we filter the data which contains 'NA'.
+
+```{r}
+dataFrame <- brfss2013 %>% 
+             filter(!is.na(employ1), !is.na(qlstres2), !is.na(sleptim1), !is.na(menthlth),!is.na(misdeprd)) %>% 
+             select(employ1, sleptim1, qlstres2, misdeprd,menthlth)
+```
+
+Then, let's clear out the possible outliers in the 'sleptim1','qlstres2', and 'menthlth.
+
+```{r}
+dataFrame <- dataFrame %>% 
+             filter(qlstres2 <= 30, sleptim1 <= 24, menthlth<= 30)
+```
+
+After cleaning the data, we can see now that there are eight categories of employment status. However, it is quite a lot for categorization purposes. Because of that, the categorization will be reduced to three: "Fulltime", "Freelancer", and "Unemployed". Consequently, people who have employment for wages will be classified as "Fulltime", people who's doing a freelancer or homemaker will be classified as "Freelancer" and people who are out of job will be classified as "Unemployed". People who are student or already retired will be excluded from the data since the focus in this investigation is about to find whether there might be correlation between employment status and general well-being.
+
+```{r}
+dataFrame <- dataFrame %>%
+             filter(employ1 != "A student",employ1 != "Retired") %>%
+             mutate(employ1 = if_else(employ1 == "Employed for wages", "Fulltime", if_else(employ1              == "Self-employed" | employ1 == "A Homemaker","Freelancer","Unemployed")))
+
+```
+
+Now let's see the proportion of the data grouped by employment status.
+```{r}
+dataFrame %>%
+  group_by(employ1) %>%
+  summarise( count = n())
+```
+At the end after data cleaning, we have 24 Freelancers, 129 Fulltime employee, and 130 people who are unemployed. Then, let's start creating a plot to find out the association between employment status and US resident's general well-being.
+
+```{r,fig.align='center',fig.width = 10}
+group1 <- dataFrame %>%
+         group_by(employ1) %>%
+         summarise(sleepTime = mean(sleptim1),
+                   anxietyLevel = mean(qlstres2),
+                   mentalHealth = mean(menthlth))%>%
+         arrange(desc(anxietyLevel))
+
+positions <- c("Fulltime", "Freelancer","Unemployed")
+p1 <- group1 %>% 
+      ggplot(aes(x = employ1, y = sleepTime)) +
+      geom_bar(position = 'dodge', stat = "identity", fill='#599ad3') +
+      geom_text(aes(label = round(sleepTime,2)), vjust = 1.5, color = "white") +
+      scale_x_discrete(limits = positions) +
+      theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+      labs(x = NULL, y = "Sleep Duration per Day")
+
+p2 <- group1 %>% 
+      ggplot(aes(x = employ1, y = anxietyLevel)) +
+      geom_bar(position = 'dodge', stat = "identity", fill='#599ad3') +
+      geom_text(aes(label = round(anxietyLevel,2)), vjust = 1.5, color = "white") +
+      scale_x_discrete(limits = positions) +
+      theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+      labs(x = NULL, y = "Anxiety Health Conditions in a Month")
+
+p3 <- group1 %>% 
+      ggplot(aes(x = employ1, y = mentalHealth)) +
+      geom_bar(position = 'dodge', stat = "identity", fill='#599ad3') +
+      geom_text(aes(label = round(mentalHealth,2)), vjust = 1.5, color = "white") +
+      scale_x_discrete(limits = positions) +
+      theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+      labs(x = NULL, y = "Mental Health Conditions in a Month")
+    
+
+grid.arrange(p1, p2, p3, nrow = 1)
+
+```
+From the bar plot, we can see that there are certain patterns that we can draw some analysis on. For example in the plot employment status and sleep time, there aren't too much difference between the average duration of sleep between different categories. However, we can see that it turns out that people with a fulltime job sleep a little bit longer in a day compared to freelancer and unemployed people.
+
+Although there is not much difference between sleeping duration of people with different categories, however we can see a much clearer difference between employment status and anxiety level. Unemployed people feel anxious 2.5 times or 150% more in a month than people with fulltime jobs on average. This finding is also supported with the data that we have seen from employment status and the mental health. Unemployed people feel that their mental condition not in a good shape for almost thrice as people with fulltime jobs in a month. This suggest that there is an association between mental health and employment status as well as anxiety level and employment status.
+
+Next, let's take a look at how often people get depressed in a month.
+```{r,fig.align='center',fig.width = 10}
+groupDepr <- dataFrame %>%
+         group_by(misdeprd, employ1) %>%
+         summarise(count=n()) %>%
+         spread(employ1, count, fill=0)
+
+groupDepr <- melt(groupDepr[,c('misdeprd','Unemployed','Freelancer','Fulltime')],id.vars = 1)
+
+ggplot(groupDepr,aes(x = misdeprd,y = value)) + 
+    geom_bar(aes(fill = variable),stat = "identity",position = "dodge") +
+    labs(title = "Depression Frequency Among US Residents in a Month",
+         x = NULL, y = "Number of Residents") +
+    guides(fill=guide_legend(title="Employment Status"))+
+    theme(plot.title = element_text(hjust = 0.5,size=18))
+
+```
+Looking at the bar chart above, it seems like most of the people that have been interviewed gave an answer that they never feel depressed. Although we can draw a conclusion that people with fulltime jobs never have severe depression in a month and some unemployed people have severe depression, we cannot draw a strong conclusion based on this data since the data is too skewed. As we can see, most of people gave the answer that they never had any depression in any given moment. Since the sampling method was conducted based on telephone interview, there might be a chance of a response bias with this kind of categorical questions.
+
+**************************************************************************************************
+## Problem II
+
+Now that the association between employment status and people's general well-being has been found out, let's look at the potential correlation between the income level of the residents with their overall well-being. Is it similar with the one that has been found in the employment status? 
+
+In order to do this, the same data that has been used in the first problem will be used again. However, there will be new variable, which is the income level 'income2'. As the first step, let's take a look at the income level data from BRFSS.
+
+```{r}
+brfss2013 %>%
+  group_by(income2) %>%
+  summarise( n = n())
+```
+
+From the data above, there are eight categories of income and there are 71426 respondents who chose not to answer the question. So we need to filter out this 'NA' data before processing the data.
+
+Also, since eight categories is too dense to visualize, it is necessary to reduce the classification of categorization. Hence, the classification will be reduced to four categories. People with income less than \$25,000 will be grouped into one group, people with income less than \$50,000 will be grouped into one group, and the rest stays the same.
+
+```{r}
+dataFrame_incomeEmploye <- brfss2013 %>% 
+             filter(!is.na(employ1), !is.na(income2)) %>% 
+             select(employ1, income2)
+
+dataFrame_incomeEmploye <- dataFrame_incomeEmploye %>% 
+             mutate(employ1 = if_else(employ1 == "Employed for wages", "Fulltime", if_else(employ1 == "Self-employed" | employ1 == "A Homemaker","Freelancer",if_else(employ1 ==	
+"Out of work for 1 year or more" | employ1 == "Out of work for less than 1 year","Unemployed","Non-working"))))  %>% 
+  
+            mutate(income2 = if_else(income2=="Less than $10,000" | income2 == "Less than $15,000" | income2 == "Less than $20,000" | income2 =="Less than $25,000", "Less than $25,000", if_else(income2 == 'Less than $35,000' | income2 == "Less than $50,000", "Less than $50,000", if_else(income2 == "Less than $75,000","Less than $75,000","$75,000 or more"))))
+```              
+
+Alright, first, let's plot the distribution of US residents income.
+```{r,fig.align='center',fig.width = 10, fig.height=6}
+groupIncome <- dataFrame_incomeEmploye %>%
+         group_by(income2, employ1) %>%
+         summarise(count=n()) %>%
+         spread(employ1, count, fill=0)
+
+groupIncome <- melt(groupIncome[,c('income2','Unemployed','Freelancer','Fulltime')],id.vars = 1)
+positions <- c("Less than $25,000", "Less than $50,000", "Less than $75,000","$75,000 or more")
+ggplot(groupIncome,aes(x = income2,y = value)) + 
+    geom_bar(aes(fill = variable),stat = "identity",position = "stack") +
+    scale_x_discrete(limits = positions) +
+    labs(title = "Classification of US Residents' Level of Income",
+         x = NULL, y = "Number of Residents") +
+    guides(fill=guide_legend(title="Employment Status"))+
+    theme(plot.title = element_text(hjust = 0.5,size=18))
+
+```
+
+From the stacked bar plot, we can see that the majority of US residents have income level above \$ 75,000 or more. And as we expect, altough we have seen a lot of people with fulltime jobs have income level below \$ 25,000, but the majority of of the unemployed people have an income level below \$ 25,000. Now, let's do EDA similar to problem 1, but now taking more emphasis on people's income level rather than people's employment status.
+
+First, we create a data frame consists of variables of interest.
+```{r}
+dataFrame_incomeHealth <- brfss2013 %>% 
+             filter(!is.na(sleptim1), !is.na(income2), !is.na(menthlth), !is.na(qlstres2), !is.na(misdeprd)) %>% 
+            mutate(income2 = if_else(income2=="Less than $10,000" | income2 == "Less than $15,000" | income2 == "Less than $20,000" | income2 =="Less than $25,000", "Less than $25,000", if_else(income2 == 'Less than $35,000' | income2 == "Less than $50,000", "Less than $50,000", if_else(income2 == "Less than $75,000","Less than $75,000","$75,000 or more"))))%>% 
+             select(income2, sleptim1, menthlth, qlstres2, misdeprd)
+            
+```
+
+Then, we can plot the result.
+
+```{r,fig.align='center',fig.width = 10}
+groupInc_health <- dataFrame_incomeHealth %>%
+         group_by(income2) %>%
+         summarise(sleepTime = mean(sleptim1),
+                   anxietyLevel = mean(qlstres2),
+                   mentalHealth = mean(menthlth))%>%
+         arrange(desc(anxietyLevel))
+
+positions <- c("Less than $25,000", "Less than $50,000", "Less than $75,000","$75,000 or more")
+p1 <- groupInc_health %>% 
+      ggplot(aes(x = income2, y = sleepTime)) +
+      geom_bar(position = 'dodge', stat = "identity", fill='#599ad3') +
+      geom_text(aes(label = round(sleepTime,2)), vjust = 1.5, color = "white") +
+      scale_x_discrete(limits = positions) +
+      theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+      labs(x = NULL, y = "Sleep Duration per Day") 
+
+p2 <- groupInc_health %>% 
+      ggplot(aes(x = income2, y = anxietyLevel)) +
+      geom_bar(position = 'dodge', stat = "identity", fill='#599ad3') +
+      geom_text(aes(label = round(anxietyLevel,2)), vjust = 1.5, color = "white") +
+      scale_x_discrete(limits = positions) +
+      theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+      labs(x = NULL, y = "Anxiety Related Condition in a Month") 
+
+p3 <- groupInc_health %>% 
+      ggplot(aes(x = income2, y = mentalHealth)) +
+      geom_bar(position = 'dodge', stat = "identity", fill='#599ad3') +
+      geom_text(aes(label = round(mentalHealth,2)), vjust = 1.5, color = "white") +
+      scale_x_discrete(limits = positions) +
+      theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+      labs(x = NULL, y = "Mental Related Condition in a Month") 
+    
+
+grid.arrange(p1, p2, p3, nrow = 1)
+
+```
+From the bar plot above, we can see that there is also no significant difference on the sleep duration per day between people with different income levels. This is similar to what we have found in the employment status in problem I and all of them sleep roughly 7 hours per day.
+
+We can also see similar trends in the plot between income level and the anxiety level in a month. In fact, similar with what we have seen before, we can draw a response-explanatory variable in this case. It is no secret that people with income less than \$ 25,000 might find it a little bit difficult to fulfill their daily needs and hence, the more anxious they get. People with income less than \$ 25,000 feel anxious two times more than people with high income.
+
+What is interesting and different than what we have seen before is the third plot, which is the plot between mental health condition and level of income. As we might guess, people with income level less than \$25,000 are more prone to mental-related health condition since they need to think harder in order to fulfill their daily needs. They suffer mental-related health conditions twice as more as people with a more steady income. However, people with very high income also have more mental-related health conditions compared to people with average income. This might be due to the huge responsibility and pressure in the working places that they might endure. However, in order to know the exactly the causality of these two variables, an experiment needs to be conducted.
+
+**************************************************************************************************
+### Problem III
+
+Lifestyle of the people with high level of income is interesting to investigate. Some people will assume that when a person has a high salary, then she/he will be happy in their life because they have financial freedom, they can afford whatever things they want to buy, etc. However, based on the finding in problem II, we have seen that people with very high income have mental-related health problem more than people with average salary in a month. In order to find out about the potential explanation of this, an investigation should be conducted.
+
+In order to do this, this investigation will solely based on the people with income more than \$75,000. To compare the result, the group of people with lowest rate of mental-related health problem will be used as benchmark, i.e people with income \$50,000 < x < \$75000.
+
+```{r}
+dataFrame_wealthy <- brfss2013 %>% 
+             filter(!is.na(income2), income2 == "Less than $75,000" | income2 == "$75,000 or more")   
+             
+```
+
+Now, let's take a look at variable 'scntwrk1', which is the time spend at work per week.
+```{r}
+dataFrame_wealthy %>%
+  group_by(scntwrk1) %>%
+  summarise( n = n())
+```
+From the data above, we can see that there are 162958 respondents that didn't give the answer, so we need to clear this data out. Then, let's create a new feature, which is the working status of each respondents. The working status has three categories to classifiy whether respondents work less than 35 hours, in between, or above 45 hours in a week.
+
+```{r}
+dataWork <- dataFrame_wealthy %>%
+            filter(!is.na(scntwrk1)) %>%
+            select(income2, scntwrk1) %>%
+            mutate(status = if_else(scntwrk1 < 35,"less than 35 hours", if_else(scntwrk1 > 35 &               scntwrk1 < 45, "35-45 hours", "more than 45 hours" )))
+```
+
+Then, we prepare the data for visualization. The data will be divided based on income category and will be processed separately.
+```{r, fig.align='center',fig.width = 10, fig.height=6}
+data75 <- dataWork %>%
+          filter(income2 == "$75,000 or more") %>%
+          group_by(status) %>%
+          summarise(count = n())
+
+data50 <- dataWork %>%
+          filter(income2 == "Less than $75,000") %>%
+          group_by(status) %>%
+          summarise(count = n())
+#-------------------------------------------------------------------------------------------------
+data75$fraction <- data75$count / sum(data75$count)
+data75$ymax <- cumsum(data75$fraction)
+data75$ymin <- c(0, head(data75$ymax, n=-1))
+data75$labelPosition <- (data75$ymax + data75$ymin) / 2
+data75$label <- paste0(data75$status, "\n value: ",round(data75$fraction*100,2),"%")
+
+data50$fraction <- data50$count / sum(data50$count)
+data50$ymax <- cumsum(data50$fraction)
+data50$ymin <- c(0, head(data50$ymax, n=-1))
+data50$labelPosition <- (data50$ymax + data50$ymin) / 2
+data50$label <- paste0(data50$status, "\n value: ",round(data50$fraction*100,2),"%")
+
+#-------------------------------------------------------------------------------------------------
+
+time1 <-ggplot(data75, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=status)) +
+       geom_rect() +
+       geom_label(x=3.5,(aes(y=labelPosition, label=label)), size=2.5) +
+       scale_fill_brewer(palette=4) +
+       coord_polar(theta="y") +
+       xlim(c(2, 4)) +
+       theme_void() +
+       theme(legend.position = "none")+
+       ggtitle("Working hours spend in a week \nfor people with income more than $75,000")+
+       theme(plot.title = element_text(hjust = 0.5,size=18))
+
+time2 <-ggplot(data50, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=status)) +
+       geom_rect() +
+       geom_label(x=3.5,(aes(y=labelPosition, label=label)), size=2.5) +
+       scale_fill_brewer(palette=4) +
+       coord_polar(theta="y") +
+       xlim(c(2, 4)) +
+       theme_void() +
+       theme(legend.position = "none")+
+       ggtitle("Working hours spend in a week \nfor people with income less than $75,000")+
+       theme(plot.title = element_text(hjust = 0.5, size=18))
+       
+grid.arrange(time1, time2, nrow = 1)
+```
+
+From the doughnut chart above, it can be clearly seen the difference between the working hours spend in a week between people with income more than \$75,000 and less than \$75,000. As we have seen above, more than 50% of the people with high level of income spend more than 45 hours in a week for work. Meanwhile, only 44.22% people with income less than \$75,000 spends their weekly working hours more than 45 hours.
+
+With this data, we can draw one explanatory reasoning regarding why people with high level of income suffer mental-related health conditions more than people with average income. However, is there any other factor that might play a role on this phenomenon?
+
+Let's check the data regarding their exercise activity. Have they done any physical activity in the past 30 days?
+```{r}
+dataFrame_wealthy %>%
+  group_by(exerany2) %>%
+  summarise( n = n())
+```
+As we can see above, there are 141074 respondents who respond 'yes', and 31110 who respond 'no', while the other 8949 refuse to answer the question. Before visualize the result, let's clean up the data from any 'NA' value.
+
+```{r}
+dataFrame_phyActivity <- brfss2013 %>% 
+             filter(!is.na(income2), income2 == "Less than $75,000" | income2 == "$75,000 or more",!is.na(exerany2)) %>% 
+             select(income2,exerany2)
+```
+Then, let's do data manipulation in order to plot the grouped bar plot.
+
+```{r,fig.align='center',fig.width = 10, fig.height=6}
+groupPhysical <- dataFrame_phyActivity %>%
+                 group_by(exerany2,income2) %>%
+                 summarise(count=n()) %>%
+                 spread(income2, count, fill=0)
+groupPhysical <- melt(groupPhysical[,c('exerany2','Less than $75,000','$75,000 or more')],id.vars = 1)
+
+ggplot(groupPhysical,aes(x = exerany2,y = value)) + 
+    geom_bar(aes(fill = variable),stat = "identity",position = "dodge") +
+    labs(title = "Do people do exercise in the past 30 days?",
+         x = NULL, y = NULL) +
+    guides(fill=guide_legend(title="Income Level"))+
+    theme(plot.title = element_text(hjust = 0.5,size=18))
+```
+From the data above, it can be clearly seen that people with high income do exercise in the past 30 days, in fact, there are a lot of them. So, it is interesting as well to find out how many hours do they spend on exercise.
+
+In order to do that, first, let's check what is inside variable 'exerhmm1'.
+```{r}
+dataFrame_wealthy %>%
+  group_by(exerhmm1) %>%
+  summarise( n = n())
+```
+
+After that, let's do data manipulation in order to get a doughnut chart as visualization.
+
+```{r}
+dataWorkPhy <- dataFrame_wealthy %>%
+            filter(!is.na(exerhmm1)) %>%
+            select(income2, exerhmm1) %>%
+            mutate(status = if_else(exerhmm1 < 51,"0-50 minutes", if_else(exerhmm1 < 101,"51-100 minutes", if_else(exerhmm1 < 151 , "101-150 minutes", if_else(exerhmm1 < 201, "151-200 minutes", "more than 200 minutes" )))))
+```
+
+```{r,fig.align='center',fig.width = 10, fig.height=6}
+dataPhy75 <- dataWorkPhy%>%
+          filter(income2 == "$75,000 or more") %>%
+          group_by(status) %>%
+          summarise(count = n())
+
+dataPhy50 <- dataWorkPhy %>%
+          filter(income2 == "Less than $75,000") %>%
+          group_by(status) %>%
+          summarise(count = n())
+#-------------------------------------------------------------------------------------------------
+dataPhy75$fraction <- dataPhy75$count / sum(dataPhy75$count)
+dataPhy75$ymax <- cumsum(dataPhy75$fraction)
+dataPhy75$ymin <- c(0, head(dataPhy75$ymax, n=-1))
+dataPhy75$labelPosition <- (dataPhy75$ymax + dataPhy75$ymin) / 2
+dataPhy75$label <- paste0(dataPhy75$status, "\n value: ",round(dataPhy75$fraction*100,2),"%")
+
+dataPhy50$fraction <- dataPhy50$count / sum(dataPhy50$count)
+dataPhy50$ymax <- cumsum(dataPhy50$fraction)
+dataPhy50$ymin <- c(0, head(dataPhy50$ymax, n=-1))
+dataPhy50$labelPosition <- (dataPhy50$ymax + dataPhy50$ymin) / 2
+dataPhy50$label <- paste0(dataPhy50$status, "\n value: ",round(dataPhy50$fraction*100,2),"%")
+
+#-------------------------------------------------------------------------------------------------
+
+time1 <-ggplot(dataPhy75, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=status)) +
+       geom_rect() +
+       geom_label(x=3.5,(aes(y=labelPosition, label=label)), size=2.5) +
+       scale_fill_brewer(palette=4) +
+       coord_polar(theta="y") +
+       xlim(c(2, 4)) +
+       theme_void() +
+       theme(legend.position = "none")+
+       ggtitle("Minutes spend for exercise for people \nwith income more than $75,000")+
+       theme(plot.title = element_text(hjust = 0.5,size=18))
+
+time2 <-ggplot(dataPhy50, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=status)) +
+       geom_rect() +
+       geom_label(x=3.5,(aes(y=labelPosition, label=label)), size=2.5) +
+       scale_fill_brewer(palette=4) +
+       coord_polar(theta="y") +
+       xlim(c(2, 4)) +
+       theme_void() +
+       theme(legend.position = "none")+
+       ggtitle("Minutes spend for exercise for people \nwith income less than $75,000")+
+       theme(plot.title = element_text(hjust = 0.5, size=18))
+       
+grid.arrange(time1, time2, nrow = 1)
+```
+
+From the visualization above, it can be concluded that regardless of their income level, people with high income do exercise with similar hours compared to those who have average salary. However, if we take a closer look, people with average salary seems to have a better percentage when it comes to exercise hours that is above 200 minutes, which is 8.1% compared to 7.59% of the person who have a high salary. This phenomenon is understandable since people with high salary will normally be busier than their other peer.
+
+Overall, there might be other cases that could be a good explanatory variables on why people with high income tend to have more mental-related health conditions compared to those who have average income. As we have seen before, one of few factors for that might be the time they spend on average in a week in their workplace or maybe the time they spend to exercise.
+
+**************************************************************************************************
+## Conclusion and Summary
+
+In this project, investigations regarding the association between employment status and people's level of income to their general well-being has been conducted. In problem I, the association between employment status and people's well-being is investigated. In problem II, the association between people's level of income and their well-being is researched. Finally, in problem III
+the possible explanatory variables regarding the mental-related health conditions among people with high level of income is investigated. Based on the research that has been conducted, following conclusions can be drawn:
+
+- There is a weak correlation between people's sleeping duration per day with their employment status and level of income.
+- The less the salary people's get, the more they are prone of having stress, anxiety, as well as other mental-related health conditions.
+- The employment status have a signicant role to people's mental-related health conditions. People who are unemployed are almost three times more prone of having mental health conditions compared to people who have fulltime jobs.
+- People with high level of income show higher possibility of having mental-related health conditions compared to people with average salary. Few of explanatory variables including the amount of time they spend in the office in a week as well the intensity of their exercises.
+
+```
