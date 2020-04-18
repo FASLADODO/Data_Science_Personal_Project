@@ -26,7 +26,7 @@ In total, there are 491,775 respondents, with 330 different set of features.
 ***************************************************************************************************
 ## Scope of Inference
 
-Given the size of the data gathered from BRFSS that consist of around 400,000 adult respondents in each year, we could agree that the result of the data is pretty much robust and can be generalized. However, looking at how the sample is gathered, i.e via telephone interviews, it is no secret that there will be a lot of sources of bias that can be generated. Different sources of the bias that migh occur with this sampling method including:
+Given the size of the data gathered from BRFSS that consist of around 400,000 adult respondents in each year, we could agree that the result of the data is pretty much robust and can be generalized. However, looking at how the sample is gathered, i.e via telephone interviews, it is no secret that there will be a lot of sources of bias that can be generated. Different sources of the bias that might occur with this sampling method including:
 
 1. **Convenience sample**: it is no secret that people with healthy lifestyle are much more approachable compared to people with bad lifestyle habits like drug or alcohol consumers. Hence, it would be no surprise that the majority of the respondents come from people with healthy lifestyle.
 2. **Non-reponse sample**: usually the question regarding self health conditions and lifestyle habits is a very sensitive topic and not a lot of people will be comfortable to answer such question. Hence, we can expect that although people have a bad habits like heavy addiction to drug or alcohol, they would likely to give different answer when people ask them such questions. In other words, the data that has been gathered might be no longer the representative of the population.
@@ -41,9 +41,9 @@ As stated above, the BRFSS used telephone interviews to gather data. It means th
 
 There are three main questions that will be addressed in this project utilizing the datasets from BRFSS. These questions are:
 
-1. There are  assumptions out there that the more people delve into their job, the harder their chance to find a perfect balance in their life, hence anxiety and depression increased. However on the flip side, people who are unemployed will also feel depressed and anxious because they don't have a steady income. It is interesting to investigate which hypothesis holds more weight among US residents. 
+1. There are  assumptions out there that when people have a job, the harder their chance to find a perfect balance in their life, i.e the shorter the time they have to do their personal hobbies and so on. However on the flip side, people who are unemployed have a lot of time to do anything they want with consequences that they don't have a steady income. The question is, is employment status has any correlation with the development of mental-related health conditions? If yes, which group of people that will be affected the most? 
 2. Based on the finding in point 1, what about the income level of each person? Will the finding be similar compared to what we found in the problem 1? Does the income level has any correlation on the anxiety and depression level of the residents?  It is interesting to find out whether the financial status of the residents has any correlation with their overall mental well-being. However, for this observation, the investigation will be based on people with fulltime employment and people who are unemployed.
-3. Based on the finding in point 2, is it true that people with high level of income have greater risk of developing mental-related health condition compared to people with average income? If it happens to be true, what might be the possible explanatory variables? It will be interesting to find out few factors that might be the root cause of mental-related health condition amoung US residents with high level of income.
+3. Based on the finding in point 2, is it true that people with high level of income have greater risk of developing mental-related health condition compared to people with average income? If it happens to be true, what might be the possible explanatory variables?
 
 **************************************************************************************************
 
@@ -86,7 +86,7 @@ brfss2013 %>%
 
 ```
 
-From the summary above, it can be seen that there are eight categories in the employment status, with 3386 rows categorized as 'NA', which means that the respondents didn't answer this question. Now let's take a look at the people's sleep duration.
+From the summary above, it can be seen that there are eight categories in the employment status, with 3386 rows categorized as 'NA', which means that the respondents didn't answer this question. Now let's take a look at people's sleeping duration per day.
 
 ```{r}
 
@@ -193,9 +193,9 @@ p3 <- group1 %>%
 grid.arrange(p1, p2, p3, nrow = 1)
 
 ```
-From the bar plot, we can see that there are certain patterns that we can draw some analysis on. For example in the plot employment status and sleep time, there aren't too much difference between the average duration of sleep between different categories. However, we can see that it turns out that people with a fulltime job sleep a little bit longer in a day compared to freelancer and unemployed people.
+From the bar plot, we can see that there are certain patterns that we can draw some analysis on. For example in the plot employment status and sleep time, there is not too much difference on the average duration of sleep between people with different employment status. However, we can see that it turns out that people with a fulltime job sleep a little bit longer in a day compared to freelancer and unemployed people.
 
-Although there is not much difference between sleeping duration of people with different categories, however we can see a much clearer difference between employment status and anxiety level. Unemployed people feel anxious 2.5 times or 150% more in a month than people with fulltime jobs on average. This finding is also supported with the data that we have seen from employment status and the mental health. Unemployed people feel that their mental condition not in a good shape for almost thrice as people with fulltime jobs in a month. This suggest that there is an association between mental health and employment status as well as anxiety level and employment status.
+Although there is not much difference of sleeping duration of people with different categories, however we can see a much clearer difference between employment status and anxiety level. Unemployed people feel anxious 2.5 times or 150% more in a month than people with fulltime jobs on average. This finding is also supported with the data that we have seen from employment status and the mental health. Unemployed people feel that their mental condition not in a good shape for almost three times or almost 200% more than people with fulltime jobs in a month. This suggest that there is an association between mental health and employment status as well as anxiety level and employment status.
 
 Next, let's take a look at how often people get depressed in a month.
 ```{r,fig.align='center',fig.width = 10}
@@ -221,7 +221,7 @@ Looking at the bar chart above, it seems like most of the people that have been 
 
 Now that the association between employment status and people's general well-being has been found out, let's look at the potential correlation between the income level of the residents with their overall well-being. Is it similar with the one that has been found in the employment status? 
 
-In order to do this, the same data that has been used in the first problem will be used again. However, there will be new variable, which is the income level 'income2'. As the first step, let's take a look at the income level data from BRFSS.
+In order to do this, the same data that has been used in the first problem will be used again. However, there will be a new variable, which is the income level 'income2'. As the first step, let's take a look at the income level data from BRFSS.
 
 ```{r}
 brfss2013 %>%
@@ -245,7 +245,7 @@ dataFrame_incomeEmploye <- dataFrame_incomeEmploye %>%
             mutate(income2 = if_else(income2=="Less than $10,000" | income2 == "Less than $15,000" | income2 == "Less than $20,000" | income2 =="Less than $25,000", "Less than $25,000", if_else(income2 == 'Less than $35,000' | income2 == "Less than $50,000", "Less than $50,000", if_else(income2 == "Less than $75,000","Less than $75,000","$75,000 or more"))))
 ```              
 
-Alright, first, let's plot the distribution of US residents income.
+First, let's plot the distribution of US residents income.
 ```{r,fig.align='center',fig.width = 10, fig.height=6}
 groupIncome <- dataFrame_incomeEmploye %>%
          group_by(income2, employ1) %>%
@@ -316,14 +316,14 @@ grid.arrange(p1, p2, p3, nrow = 1)
 ```
 From the bar plot above, we can see that there is also no significant difference on the sleep duration per day between people with different income levels. This is similar to what we have found in the employment status in problem I and all of them sleep roughly 7 hours per day.
 
-We can also see similar trends in the plot between income level and the anxiety level in a month. In fact, similar with what we have seen before, we can draw a response-explanatory variable in this case. It is no secret that people with income less than \$ 25,000 might find it a little bit difficult to fulfill their daily needs and hence, the more anxious they get. People with income less than \$ 25,000 feel anxious two times more than people with high income.
+We can also see similar trends in the plot between income level and the anxiety level in a month. People with income less than \$ 25,000 feel anxious two times more than people with high income. We could even draw a possible response-explanatory variable with this case. It is no secret that people with income less than \$ 25,000 might find it a little bit difficult to fulfill their daily needs and hence, the more anxious they get. However, in order to validate this hypothesis, an experiment needs to be conducted. 
 
-What is interesting and different than what we have seen before is the third plot, which is the plot between mental health condition and level of income. As we might guess, people with income level less than \$25,000 are more prone to mental-related health condition since they need to think harder in order to fulfill their daily needs. They suffer mental-related health conditions twice as more as people with a more steady income. However, people with very high income also have more mental-related health conditions compared to people with average income. This might be due to the huge responsibility and pressure in the working places that they might endure. However, in order to know the exactly the causality of these two variables, an experiment needs to be conducted.
+What is interesting and different than what we have seen before is the third plot, which is the plot between mental health condition and level of income. As we might guess, people with income level less than \$25,000 are more prone to mental-related health conditions. They suffer mental-related health conditions twice as more as people with a more steady income. However, people with very high income surprisingly are more prone to mental-related health conditions compared to those with average income.
 
 **************************************************************************************************
 ### Problem III
 
-Lifestyle of the people with high level of income is interesting to investigate. Some people will assume that when a person has a high salary, then she/he will be happy in their life because they have financial freedom, they can afford whatever things they want to buy, etc. However, based on the finding in problem II, we have seen that people with very high income have mental-related health problem more than people with average salary in a month. In order to find out about the potential explanation of this, an investigation should be conducted.
+Lifestyle of the people with high level of income is interesting to investigate. Some people will assume that when a person has a high salary, then she/he will be happy in their life because they have financial freedom, they can afford whatever things they want to buy, etc. However, based on the finding in problem II, we have seen that people with very high income are more prone to mental-related health problem than people with average salary in a month. Although we need an experiment to find the exact reasoning for this, but it is interesting to find out few potential explanatory variables for this phenomenon.
 
 In order to do this, this investigation will solely based on the people with income more than \$75,000. To compare the result, the group of people with lowest rate of mental-related health problem will be used as benchmark, i.e people with income \$50,000 < x < \$75000.
 
@@ -399,9 +399,9 @@ time2 <-ggplot(data50, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=status)) +
 grid.arrange(time1, time2, nrow = 1)
 ```
 
-From the doughnut chart above, it can be clearly seen the difference between the working hours spend in a week between people with income more than \$75,000 and less than \$75,000. As we have seen above, more than 50% of the people with high level of income spend more than 45 hours in a week for work. Meanwhile, only 44.22% people with income less than \$75,000 spends their weekly working hours more than 45 hours.
+From the doughnut chart above, it can be clearly seen the difference of working hours spend in a week between people with income more than \$75,000 and less than \$75,000. As we have seen above, more than 50% of the people with high level of income spend more than 45 hours in a week for work. Meanwhile, only 44.22% people with income less than \$75,000 spends their weekly working hours more than 45 hours.
 
-With this data, we can draw one explanatory reasoning regarding why people with high level of income suffer mental-related health conditions more than people with average income. However, is there any other factor that might play a role on this phenomenon?
+With this data, we have one potential explanatory variables regarding why people with high level of income suffer mental-related health conditions more than people with average income. However, it is important to note that the exact reasoning can't be drawn based on this data alone since we need to conduct an experiment rather than observation.  Next, is there any other explanatory variables we can find on this phenomenon?
 
 Let's check the data regarding their exercise activity. Have they done any physical activity in the past 30 days?
 ```{r}
@@ -428,7 +428,7 @@ groupPhysical <- melt(groupPhysical[,c('exerany2','Less than $75,000','$75,000 o
 ggplot(groupPhysical,aes(x = exerany2,y = value)) + 
     geom_bar(aes(fill = variable),stat = "identity",position = "dodge") +
     labs(title = "Do people do exercise in the past 30 days?",
-         x = NULL, y = NULL) +
+         x = NULL, y = "Number of Residents") +
     guides(fill=guide_legend(title="Income Level"))+
     theme(plot.title = element_text(hjust = 0.5,size=18))
 ```
@@ -500,9 +500,9 @@ time2 <-ggplot(dataPhy50, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=status)
 grid.arrange(time1, time2, nrow = 1)
 ```
 
-From the visualization above, it can be concluded that regardless of their income level, people with high income do exercise with similar hours compared to those who have average salary. However, if we take a closer look, people with average salary seems to have a better percentage when it comes to exercise hours that is above 200 minutes, which is 8.1% compared to 7.59% of the person who have a high salary. This phenomenon is understandable since people with high salary will normally be busier than their other peer.
+From the visualization above, it can be concluded that regardless of their income level, people with high income do exercise with similar hours compared to those who have average salary. However, if we take a closer look, people with average salary seems to have a better percentage when it comes to exercise hours that is above 150 minutes, which is roughly 14.32% compared to 13.33% of the person who have a high salary. This phenomenon is understandable since people with high salary will normally be busier than their other peer.
 
-Overall, there might be other cases that could be a good explanatory variables on why people with high income tend to have more mental-related health conditions compared to those who have average income. As we have seen before, one of few factors for that might be the time they spend on average in a week in their workplace or maybe the time they spend to exercise.
+Overall, there might be other  good explanatory variables on why people with high income tend to have more mental-related health conditions compared to those who have average income. As we have seen before, few of possible explanatory variables including the time they spend on average in a week to work or the amount of time they spend to exercise.
 
 **************************************************************************************************
 ## Conclusion and Summary
@@ -513,6 +513,5 @@ the possible explanatory variables regarding the mental-related health condition
 - There is a weak correlation between people's sleeping duration per day with their employment status and level of income.
 - The less the salary people's get, the more they are prone of having stress, anxiety, as well as other mental-related health conditions.
 - The employment status have a signicant role to people's mental-related health conditions. People who are unemployed are almost three times more prone of having mental health conditions compared to people who have fulltime jobs.
-- People with high level of income show higher possibility of having mental-related health conditions compared to people with average salary. Few of explanatory variables including the amount of time they spend in the office in a week as well the intensity of their exercises.
+- People with high level of income show higher possibility of having mental-related health conditions compared to people with average salary. Few of possible explanatory variables including the amount of time they spend in the office in a week as well the intensity of their exercises.
 
-```
