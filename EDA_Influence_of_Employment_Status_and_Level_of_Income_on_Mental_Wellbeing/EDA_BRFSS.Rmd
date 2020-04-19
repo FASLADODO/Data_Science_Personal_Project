@@ -2,10 +2,12 @@
 title: "Exploratory Data Analysis of the Influence of Employment Status and Level of Income on US Resident's Mental Well-Being"
 output:
   html_document:
-    fig_height: 4
-    highlight: pygments
-    theme: spacelab
-  pdf_document: default
+    toc: yes
+    toc_float: true
+    toc_collapsed: true
+  toc_depth: 3
+  number_sections: true
+  theme: lumen
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -323,7 +325,7 @@ We can also see similar trends in the plot between income level and the anxiety 
 What is interesting and different than what we have seen before is the third plot, which is the plot between mental health condition and level of income. As we might guess, people with income level less than \$25,000 are more prone to mental-related health conditions. They suffer mental-related health conditions twice as more as people with a more steady income. However, people with very high income surprisingly are more prone to mental-related health conditions compared to those with average income.
 
 **************************************************************************************************
-### Problem III
+## Problem III
 
 Lifestyle of the people with high level of income is interesting to investigate. Some people will assume that when a person has a high salary, then she/he will be happy in their life because they have financial freedom, they can afford whatever things they want to buy, etc. However, based on the finding in problem II, we have seen that people with very high income are more prone to mental-related health problem than people with average salary in a month. Although we need an experiment to find the exact reasoning for this, but it is interesting to find out few potential explanatory variables for this phenomenon.
 
