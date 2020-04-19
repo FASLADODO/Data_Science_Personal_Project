@@ -75,7 +75,7 @@ As we have seen above, in total there are 330 features from the dataset. Each of
 **************************************************************************************************
 ## Problem I
 
-Now let's do the investigation to prove whether the initial hypothesis, in which there might be an association between someone's employment status to their sleeping pattern, anxiety level, and mental health issue, is true. In order to do this, let's fetch some useful informations from the dataset, which is employment status 'employ1',  how much time does somebody sleep 'sleptim1', number of days in a month where they feel their mental condition is not in a good shape 'menthlth' and the number of days in a month that someone feeling anxious 'qlstres2'.
+Now let's do the investigation to prove whether the initial hypothesis, in which there might be an association between someone's employment status to their sleeping pattern, anxiety level, and mental health issue, is true. In order to do this, let's fetch some useful informations from the dataset, which is employment status `employ1`,  how much time does somebody sleep `sleptim1`, number of days in a month where they feel their mental condition is not in a good shape `menthlth` and the number of days in a month that someone feeling anxious `qlstres2`.
 
 As the first step, let's check what is inside the employment status dataset.
 
@@ -214,14 +214,16 @@ ggplot(groupDepr,aes(x = misdeprd,y = value)) +
     theme(plot.title = element_text(hjust = 0.5,size=18))
 
 ```
-Looking at the bar chart above, it seems like most of the people that have been interviewed gave an answer that they never feel depressed. Although we can draw a conclusion that people with fulltime jobs never have severe depression in a month and some unemployed people have severe depression, we cannot draw a strong conclusion based on this data since the data is too skewed. As we can see, most of people gave the answer that they never had any depression in any given moment. Since the sampling method was conducted based on telephone interview, there might be a chance of a response bias with this kind of categorical questions.
+Looking at the bar chart above, it seems like most of the people that have been interviewed gave an answer that they never feel depressed. Although we can draw a conclusion that people with fulltime jobs never have a severe depression and some unemployed people have severe depression, we cannot draw a strong conclusion based on this data since the data is heavily left skewed. As we can see, most of people gave the answer that they never had any depression in any given moment. Since the sampling method was conducted based on telephone interview, one might suspect that there is a high chance of response bias with this kind of categorical questions.
+
+One solution to address this problem is to conduct a hypothesis test for proportions, for example using Chi-square independence test method. With this approach, we can find out whether the alternative hypothesis, i.e that there might be a response bias among the observed data, holds any weight.
 
 **************************************************************************************************
 ## Problem II
 
 Now that the association between employment status and people's general well-being has been found out, let's look at the potential correlation between the income level of the residents with their overall well-being. Is it similar with the one that has been found in the employment status? 
 
-In order to do this, the same data that has been used in the first problem will be used again. However, there will be a new variable, which is the income level 'income2'. As the first step, let's take a look at the income level data from BRFSS.
+In order to do this, the same data that has been used in the first problem will be used again. However, there will be a new variable, which is the income level `income2`. As the first step, let's take a look at the income level data from BRFSS.
 
 ```{r}
 brfss2013 %>%
@@ -333,7 +335,7 @@ dataFrame_wealthy <- brfss2013 %>%
              
 ```
 
-Now, let's take a look at variable 'scntwrk1', which is the time spend at work per week.
+Now, let's take a look at variable `scntwrk1`, which is the time spend at work per week.
 ```{r}
 dataFrame_wealthy %>%
   group_by(scntwrk1) %>%
@@ -434,7 +436,7 @@ ggplot(groupPhysical,aes(x = exerany2,y = value)) +
 ```
 From the data above, it can be clearly seen that people with high income do exercise in the past 30 days, in fact, there are a lot of them. So, it is interesting as well to find out how many hours do they spend on exercise.
 
-In order to do that, first, let's check what is inside variable 'exerhmm1'.
+In order to do that, first, let's check what is inside variable `exerhmm1`.
 ```{r}
 dataFrame_wealthy %>%
   group_by(exerhmm1) %>%
