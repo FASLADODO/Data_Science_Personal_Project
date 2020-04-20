@@ -1,0 +1,362 @@
+---
+title: "Statistical Inference of Residents' Opinion on US' Effort to Halt Rising Crime Rates"
+output: 
+  html_document: 
+    toc: yes
+    toc_float: true
+    toc_collapsed: true
+  toc_depth: 3
+  number_sections: true
+  theme: lumen
+---
+
+The purpose of this project is to perform Exploratory Data Analysis (EDA) and statistical inference with the datasets gathered from the General Social Survey (GSS). Specifically, the investigation will be focused on whether there is an association between resident's opinion about US' effort to halt the rising crime rate with each of this two variables: 1.) the ownership of a gun and 2.) residents' fear of walking at night in their neighborhood.
+
+****************************************************************************************
+
+## About the Data
+
+The data used for this analysis is taken from the General Social Survey or commonly abbreviated as GSS. GSS provides one of the best source for sociological trends within the United States (US) with the data consist of national spending priorities, psychological well-being, crime and violence, and civil liberties among US residents. The end goal of GSS is to make high-quality data with easy access and minimal costs for scholars, social scientists, students, policy makers, and so on.
+
+
+In order to obtain the data, a face-to-face in person interview is conducted with the respondents that are selected randomly. The respondents of the survey are from a mix of urban , suburban, and rural areas of the US.
+
+In total, there are 57,061 respondents with 114 different features in the data used in this project. Detailed information regarding each feature can be found in the GSS codebook [here.](https://d3c33hcgiwev3.cloudfront.net/_8abbe344133a7a8c98cfabe01a5075c2_gss.html?Expires=1587513600&Signature=T3RUmYKYPOPBap5ZOtKbc07CBXOtv~UEqjcA9ycBopIZvw9xwYUNZ-1bUOttl8kiPgsbY93fYIN2CbhVbqTns77aiNmKmgp~w543CAFvNCFQ9nkk8ht2kY091DfKKEMG1Puyy35Oml93E3xiibT2KV2RaUhgefln06lcrjHM8QA_&Key-Pair-Id=APKAJLTNE6QMUY6HBC5A)
+
+****************************************************************************************
+## Scope of Inference
+
+Given the size of the data gathered from GSS that consists of around 57061 adult respondents and the fact that the sample are randomly selected, we could agree that the result of the data is pretty much robust and can be generalized to the US populations. Moreover, we have 57,061 respondents in the data, which is certainly less than 10% of the US populations. Therefore we can assume that the independence between respondents is fulfilled. 
+
+However, looking at how the sample is gathered, i.e via voluntary interviews, it is no secret that there will some sources of bias that can be generated. Different sources of the bias including convenience sample, i.e only people who want to be surveyed are going to be surveyed, which means that only people who are easily accessible are more likely to be included in the sample.
+
+Regarding the causality, since the data that have been gathered by GSS are based from face-to-face interviews, then it means that they are observing rather than conducting an experiment. Hence, we can conclude that the data can be used to draw an association between response and explanatory variables, but cannot be used to draw any causation.
+
+***************************************************************************************
+## Problem Description
+
+The main focus that will be addressed in this project is to check whether there is an association between US residents' opinion regarding how their country dealt with rising crimes and these two variables: 1) their ownership of a gun and 2.) their fear of walking at night in their neighborhoods.
+
+It will be interesting to investigate this potential association because we all know that the main reason people own a gun is to protect themselves. However, people would normally feel that they don't need to own a gun if they feel that the country can guarantee their safety. Also, there might be potential association between residents' fear to walk at night in their neighborhoods with their opinion towards country's safety. People who feel unsafe will normally have a bad opinion regarding their country's safety measurement. Therefore, it is interesting to check whether there is a correlation about it. 
+
+However, since there is no experiment here, we cannot conclude a causality from the findings. We cannot conclude that people own a gun because they don't trust country's effort to halt crime rates or people are afraid to walk at night because they have an opinion that the country's safety is bad.
+
+In order to answer this problem, following variables from the data will be used: 
+
+* `natcrime` = people's opinion about US' effort to halt crimes.
+* `owngun` = whether respondents own a gun or not.
+* `fear` = whether respondents afraid to walk at night in their neighborhood.
+
+****************************************************************************************
+## Exploratory Data Analysis
+
+Before we begin with investigation, let's load the relevant libraries and data. 
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(knitr)
+library(dplyr)
+library(reshape2)
+library(tidyr)
+library(statsr)
+library(lattice)
+library(stringr)
+library(gridExtra)
+library(tidyselect)
+```
+
+```{r load-data}
+load("gss.Rdata")
+```
+
+After that, it will be useful to check all the variables that are relevant for this observation. Let's start with variable `natcrime`.
+
+```{r}
+gss %>% group_by(natcrime) %>%
+        summarise(count=n())
+```
+
+From the data above, we can see that there are three categories to classify people's opinion regarding US' efforts to halt crimes. 21,500 respondents answered that US invest too little money to halt rising crime rates. However, there are 25,280 respondents who didn't give the answer to this question, so we need to filter them out.
+
+Next, variable `owngun`.
+
+```{r}
+gss %>% group_by(owngun) %>%
+        summarise(count=n())
+```
+
+From the data, we can see that 14,000 respondents do own a gun. However, there are 315 people who refused to answer and 22,602 people didn't give the answer. Because they will be meaningless for the observation, we can exclude them out from the data.
+
+Next, variable `fear`.
+```{r}
+gss %>% group_by(fear) %>%
+        summarise(count=n())
+```
+We can see that there are 14010 respondents confessed that they are afraid to walk at night in their neighborhood. Also, we need to exclude people who refused to answer the question out of the data.
+
+After checking the relevant variables, let's create a new cleaned data frame containing only the variable of interest and excluding all the 'NA' values as well as respondents who refused to answer.
+```{r}
+dataFrame <- gss %>% 
+             filter(!is.na(natcrime), !is.na(owngun), !is.na(fear), owngun != 'Refused') %>% 
+             select(natcrime, owngun, fear)
+```
+
+Next, we can visualize the respondents opinion whether their country's effort to halt rising crimes, economy wise, is enough.
+```{r,fig.align='center',fig.width = 10, fig.height=6}
+groupCrime <- dataFrame %>%
+              group_by(natcrime) %>%
+              summarise(count = n())
+
+groupCrime %>% 
+      ggplot(aes(x = natcrime, y = count)) +
+      geom_bar(stat = "identity", fill='#ef9c5c') +
+      geom_text(aes(label = round(count,2)), vjust = 1.5, color = "black")  +
+      labs(title = "Respondents Opinion on US' Effort to Halt Rising Crimes",
+      x = NULL, y = "Number of Residents") +
+      theme(plot.title = element_text(hjust = 0.5,size=14))
+      
+```
+
+Just by looking at the data above, we can clearly see that the majority of US respondents, roughly ~68%, agree that the US effort to halt rising crime rates is not sufficient. However, based on this data alone, we cannot draw any conclusion whether owning a gun or being afraid to walk at night in the neighborhood has any association with people's opinion. 
+
+### Association Between Owning a Gun and People's Opinion on US' Safety Measurement Against Crime
+
+
+In the first part, let's create a grouped bar chart, where the respondents who own a gun and do not own the gun will be splitted.
+
+```{r,fig.align='center',fig.width = 10, fig.height=6}
+groupCrime_and_Gun <- dataFrame %>%
+                      group_by(owngun, natcrime) %>%
+                      summarise(count=n()) %>%
+                      spread(owngun, count, fill=0) 
+
+groupCrime_and_Gun <- melt(groupCrime_and_Gun[,c('natcrime','Yes','No')],id.vars = 1)
+
+ggplot(groupCrime_and_Gun, aes(x = natcrime,y = value)) + 
+    geom_bar(aes(fill = variable),stat = "identity",position = "dodge") +
+    geom_text(position = position_dodge(0.8), aes(label = value, fill=variable), vjust = 1, hjust=0.45, color = "white") +
+    labs(title = "Respondents Opinion on US' Effort to Halt Rising Crimes",
+        x = NULL, y = "Number of Residents") +
+    guides(fill=guide_legend(title="Own a Gun?"))+
+    theme(plot.title = element_text(hjust = 0.5,size=18))
+```
+From the data above, we can see that there are similarities of opinion between people who own a gun or do not own a gun. So, it's pretty clear that regardless whether they own a gun or not, the majority of them think that US spend too little money to invest to halt the crime rates in the US.
+
+However, there is one flaw in the chart above. We agree that there are more people who don't own a gun compared to people who own a gun. So, it is only fair if we take into account the proportion of each group and gain a little bit more insight regarding the association between owning a gun and respondents' opinion. 
+
+In order to do that, let's create a doughnut chart to illustrate the findings.
+
+```{r,fig.align='center',fig.width = 10, fig.height=6}
+dataWithGun <- dataFrame %>%
+              filter(owngun == "Yes") %>%
+              group_by(natcrime) %>%
+              summarise(count = n())
+
+dataNoGun <- dataFrame %>%
+             filter(owngun == "No") %>%
+             group_by(natcrime) %>%
+             summarise(count = n())
+#-------------------------------------------------------------------------------------------------
+dataWithGun$fraction <- dataWithGun$count / sum(dataWithGun$count)
+dataWithGun$ymax <- cumsum(dataWithGun$fraction)
+dataWithGun$ymin <- c(0, head(dataWithGun$ymax, n=-1))
+dataWithGun$labelPosition <- (dataWithGun$ymax + dataWithGun$ymin) / 2
+dataWithGun$label <- paste0(dataWithGun$natcrime, "\n value:",round(dataWithGun$fraction*100,2),"%")
+
+dataNoGun$fraction <- dataNoGun$count / sum(dataNoGun$count)
+dataNoGun$ymax <- cumsum(dataNoGun$fraction)
+dataNoGun$ymin <- c(0, head(dataNoGun$ymax, n=-1))
+dataNoGun$labelPosition <- (dataNoGun$ymax + dataNoGun$ymin) / 2
+dataNoGun$label <- paste0(dataNoGun$natcrime, "\n value: ",round(dataNoGun$fraction*100,2),"%")
+
+#-------------------------------------------------------------------------------------------------
+
+time1 <-ggplot(dataWithGun, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=natcrime)) +
+       geom_rect() +
+       geom_label(x=3.5,(aes(y=labelPosition, label=label)), size=2.5) +
+       scale_fill_brewer(palette=4) +
+       coord_polar(theta="y") +
+       xlim(c(2, 4)) +
+       theme_void() +
+       theme(legend.position = "none")+
+       ggtitle("Opinion on US' Effort to Halt Crime Rates \namong Respondents Who Own a Gun")+
+       theme(plot.title = element_text(hjust = 0.5,size=18))
+
+time2 <-ggplot(dataNoGun, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=natcrime)) +
+       geom_rect() +
+       geom_label(x=3.5,(aes(y=labelPosition, label=label)), size=2.5) +
+       scale_fill_brewer(palette=4) +
+       coord_polar(theta="y") +
+       xlim(c(2, 4)) +
+       theme_void() +
+       theme(legend.position = "none") +
+       ggtitle("Opinion on US' Effort to Halt Crime Rates \namong Respondents Who Don't Own a Gun")+
+       theme(plot.title = element_text(hjust = 0.5, size=18))
+
+grid.arrange(time1, time2, nrow = 1)
+```
+With the doughnut chart above, it can be confirmed that there is a very weak correlation between gun ownership and people's opinion on US' effort to halt crime rates. There are more or less similar percentages between people who own a gun and don't own a gun and their respective opinions.
+
+From the data it can be concluded that there is almost no association between people's opinion on US' safety measurement against crimes and owning a gun. This means that people have their respective opinions on US' effort to halt crime rates regardless whether they own a gun or not. 
+
+### Association Between Fear and People's Opinion on US' Safety Measurement Against Crime
+
+After investigating the correlation between ownership of a gun and people's opinion against US' safety measurement against crimes, now let's do the same, but we change one of the variable. Instead of gun ownership `owngun`, now we are going to use variable `fear`, which indicated by whether they are afraid to walk at night in their neighborhood.
+
+First, let's create the grouped bar plot.
+
+```{r,fig.align='center',fig.width = 10, fig.height=6}
+groupCrime_and_Fear <- dataFrame %>%
+                      group_by(fear, natcrime) %>%
+                      summarise(count=n()) %>%
+                      spread(fear, count, fill=0) 
+
+groupCrime_and_Fear <- melt(groupCrime_and_Fear[,c('natcrime','Yes','No')],id.vars = 1)
+
+ggplot(groupCrime_and_Fear, aes(x = natcrime,y = value)) + 
+    geom_bar(aes(fill = variable),stat = "identity",position = "dodge") +
+    geom_text(position = position_dodge(0.8), aes(label = value, fill=variable), vjust = 1, hjust=0.45, color = "white") +
+    labs(title = "Respondents Opinion on US' Effort to Halt Rising Crimes",
+        x = NULL, y = "Number of Residents") +
+    guides(fill=guide_legend(title="Afraid \nto walk at night?"))+
+    theme(plot.title = element_text(hjust = 0.5,size=18))
+```
+Same as the previous graphs from gun ownership, we can see that there are similarities of opinion between people who are and are not afraid to walk at night in their neighborhood. So, it's pretty clear that regardless whether they afraid to walk at night in the neighborhood or not, the majority of them think that US spend too little money to invest to halt the crime rates in the US.
+
+However, same as previous graphs as well, we can agree that there are more people who are not afraid to walk at night compared to people who are afraid. So, it is only fair if we take into account the proportion of each group. 
+
+So let's create a doughnut chart to illustrate the findings once again.
+
+```{r,fig.align='center',fig.width = 10, fig.height=6}
+dataWithFear <- dataFrame %>%
+              filter(fear == "Yes") %>%
+              group_by(natcrime) %>%
+              summarise(count = n())
+
+dataNoFear <- dataFrame %>%
+             filter(fear == "No") %>%
+             group_by(natcrime) %>%
+             summarise(count = n())
+#-------------------------------------------------------------------------------------------------
+dataWithFear$fraction <- dataWithFear$count / sum(dataWithFear$count)
+dataWithFear$ymax <- cumsum(dataWithFear$fraction)
+dataWithFear$ymin <- c(0, head(dataWithFear$ymax, n=-1))
+dataWithFear$labelPosition <- (dataWithFear$ymax + dataWithFear$ymin) / 2
+dataWithFear$label <- paste0(dataWithFear$natcrime, "\n value:",round(dataWithFear$fraction*100,2),"%")
+
+dataNoFear$fraction <- dataNoFear$count / sum(dataNoFear$count)
+dataNoFear$ymax <- cumsum(dataNoFear$fraction)
+dataNoFear$ymin <- c(0, head(dataNoFear$ymax, n=-1))
+dataNoFear$labelPosition <- (dataNoFear$ymax + dataNoFear$ymin) / 2
+dataNoFear$label <- paste0(dataNoFear$natcrime, "\n value: ",round(dataNoFear$fraction*100,2),"%")
+
+#-------------------------------------------------------------------------------------------------
+
+time3 <-ggplot(dataWithFear, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=natcrime)) +
+       geom_rect() +
+       geom_label(x=3.5,(aes(y=labelPosition, label=label)), size=2.5) +
+       scale_fill_brewer(palette=4) +
+       coord_polar(theta="y") +
+       xlim(c(2, 4)) +
+       theme_void() +
+       theme(legend.position = "none")+
+       ggtitle("Opinion on US' Effort to Halt Crime Rates \namong Respondents Who are Afraid \nto Walk at Night")+
+       theme(plot.title = element_text(hjust = 0.5, size=18))
+
+
+time4 <-ggplot(dataNoFear, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=natcrime)) +
+       geom_rect() +
+       geom_label(x=3.5,(aes(y=labelPosition, label=label)), size=2.5) +
+       scale_fill_brewer(palette=4) +
+       coord_polar(theta="y") +
+       xlim(c(2, 4)) +
+       theme_void() +
+       theme(legend.position = "none")+
+       ggtitle("Opinion on US' Effort to Halt Crime Rates \namong Respondents Who are not Afraid \nto Walk at Night")+
+       theme(plot.title = element_text(hjust = 0.5, size=18))
+
+
+grid.arrange(time3, time4, nrow = 1)
+```
+From doughnut chart above, we can clearly see the difference of the proportion between people who afraid to walk at night in their neighborhood and those who don't on their opinion regarding US' safety measurement against crime. 73.12% people who afraid to walk at night said that the country spend too little investment to fight the rising crimes, where at the same time only 65.28% of people who don't have any fear said so.
+
+With this data, it can be concluded that there is a strong association between people's fear and their opinion regarding US' safety measurement against crime. This means that the more the respondents feel that their country need to improve their measurement against crime, the more they fear to walk at night in the neighborhood.
+
+Since the association between fear and people's opinion is more significant than association between gun ownership and people's opinion, then the association between fear and people's opinion will be inferred in a more detail in the next section.
+
+***************************************************************************************
+
+## Statistical Inference of People's Fear and Their Opinion on US' Safety Measurement Against Crime
+
+In this section the statistical inference of two cases will be performed:
+
+* First, the estimation of the proportion of the US residents who afraid to walk at night in their neighborhood will be performed considering 95% confidence interval, then check if the data provide such an evidence that the proportion of US populations who afraid to walk at night in the neighborhood is below 50%.
+* Second, the hypothesis testing to confirm whether there is an association between people's fear and people's opinion on US' safety measurement against crime will be performed.
+
+### First Case: CI and HT of Fear Variable
+
+In this section, the estimation of proportion of the US residents who afraid to walk at night in their neighborhood will be performed considering 95% condifence interval. 
+Then, the hypothesis testing will be performed. Since this is a categorical variable with two categories, 'yes' or 'no', then we can use CI and HT for proportions. 
+
+Before we are estimating the proportion, let's check whether the sample fulfill the independence and skewness requirements.
+
+* **Independence**: since the total sample for this survey is around 57,061 respondents, it can be guaranteed that this number is below 10% of the US population. Moreover, the surveys are randomly sampled. Therefore,we can conclude that whether respondent afraid to walk at night in the neighborhood is independent of another.
+* **Skewness**: since this is a categorical variable, then at least 10 sucesses and 10 failures condition has to be met. However, since we have 14,000 sucessess and 20,000 failures, we can assume that sampling distribution of the proportion is nearly normal.
+
+First, let's estimate the confidence interval to estimate amount of people who afraid to walk at night in their neighborhood. In order to calculate confidence interval for proportions, the following formula can be applied:
+$$\hat{p} \pm z^* SE_\hat{p}$$
+where $\hat{p}$ is the probability of the observed sample, $z^*$ is the critical value, and $SE_\hat{p}$ is the standard error of the observed probability value. In order to compute the standard error $SE_\hat{p}$ for proportion, the following formula is used:
+$$SE_\hat{p}= \sqrt{\frac{\hat{p}(1-\hat{p})}{n}}$$
+where $n$ is the number of sample. Now let's calculate the confidence interval using `inference` function.
+
+```{r,,fig.align='center',fig.width = 10, fig.height=6}
+inference(y = fear, data = dataFrame, statistic = "proportion", type = "ci", method = "theoretical", success = "Yes")
+```
+
+As we can see from the inference function, the 95% CI of `fear` variable is at (0.4059, 0.4196), which means that we are 95% confident that 40,59% to 41.96% of US populations are afraid to walk at night in their neighborhoods.
+
+Next, let's check the hypothesis if the data gathered from GSS provide a convincing evidence that the proportion of US populations who are afraid to walk at night in their neighborhoods is below 50%. We can describe the null hypothesis and alternative hypothesis in mathematical notations as follows:
+$$H_0: p = 0.5$$
+$$H_A: p < 0.5$$
+
+```{r,fig.align='center',fig.width = 10, fig.height=6}
+inference(data = dataFrame, y=fear, statistic = "proportion", type = "ht",alternative ="less",null = 0.5, method = "theoretical", success = "Yes")
+```
+From the investigation and distribution of the graphs above, we obtain the p-value that is very close to 0. Since we have 5% significance, then it can be concluded that we should reject the null hypothesis. This means that this data provide a convincing evidence that the proportion of US populations who are afraid to walk at night in their neighborhoods is below 50%.
+
+### Second Case: HT of Association Between Fear and People's Opinion on US' Safety Measurement Against Crime
+
+In the second case, the hypothesis testing to confirm whether there is an association between people's fear to walk in their neighborhoods and people's opinion on US' safety measurement against crime will be performed. Since we are evaluating two categorical variables and and people's opinion has three levels of category, then we need to use Chi-square test of independence for this purpose. Because we only check the associations between two categorical variables, there is no associated confidence interval.
+
+Before we test the hypothesis, let's check whether the conditions for Chi-square independence test are fulfilled.
+
+* **Independence**:since the total sample for this survey is around 57,061 respondents, it can be guaranteed that this number is below 10% of the US population. Moreover, the surveys are randomly sampled by GSS. Also, each case of people's fear and people's opinion will only contributes to one cell. Therefore, we can conclude the the independence is guaranteed.
+* **Skewness**: For Chi-square test of independence, each scenario must have at least 5 expected cases. We can guarantee that the variables fulfill this requirement since our data consist of thousands of respondents. However, for validation purpose, below is the expected value that we will get whenever we use Chi-square test of independence.
+```{r}
+chisq.test(dataFrame$fear,dataFrame$natcrime)$expected
+```
+
+Next, in order to conduct Chi-square test of independence, first we need to know the formula to find the $X^2$ that will be useful to find the p-value. The formula for Chi-square test of independence is:
+
+$$X^2=\sum_{i=1}^{k} \frac{(O-E)^2}{E}$$
+where $O$ is the observed value, $E$ is the expected values, and $k$ is the number of cells. Another parameter that will be used to compute p-value is the degree of freedom $df$, which we can compute with formula:
+$$df=(R-1)*(C-1)$$
+where $R$ is the number of rows and $C$ is the number columns.
+
+Next, we need to build a contingency table between the two variables and then by using `chisq_test` function, we can obtain the $X^2$, $df$, and the respective p-value.
+
+```{r}
+chisq.test(dataFrame$fear,dataFrame$natcrime)
+```
+From the calculation above, we got p-value that is close to zero, meaning that we should reject the null hypothesis. This means that the data provide a strong evidence that the people's fear of walking at night in their neighborhood and people's opinion on US' safety measurement against crime is associated.
+
+***************************************************************************************
+
+## Summary and Conclusion
+
+In this project, the exploratory data analysis regarding gun ownership, people's fear of walking at night in their neighborhoods, and people's opinion regarding US safety measurement is investigated. Then, alternative hypothesis regarding variable of interests, i.e people's fear and people's opinion is tested. From the findings the following conclusion can be made:
+
+* There is almost no correlation regarding gun ownership and residents opinion on US' safety measurement against crimes.
+* We are 95% confident that 40,59% to 41.96% of all US populations are afraid to walk at night in their neighborhoods.
+* There is a strong association regarding people's fear to walk at night in their neighborhood with people's opinion on US' safety measurement against crimes, which in the end is confirmed by Chi-square test of independence.
+
+
