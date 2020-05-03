@@ -1,5 +1,5 @@
 ---
-title: "Multivariate Regression for Movie Prediction"
+title: "Multiple Regression for Movie Prediction"
 output: 
   html_document: 
     toc: yes
@@ -10,7 +10,7 @@ output:
   theme: lumen
 ---
 
-The purpose of this project is to find out what makes a movie becomes really popular based on several features. First, an exploratory data analysis will be conducted and then, multivariate linear regression to predict the popularity of the movie will be built.
+The purpose of this project is to find out what makes a movie becomes really popular based on several features. First, an exploratory data analysis will be conducted and then, multiple linear regression to predict the popularity of the movie will be built.
 
 *******************************************************************
 
