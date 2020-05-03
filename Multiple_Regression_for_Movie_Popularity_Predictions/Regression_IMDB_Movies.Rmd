@@ -18,9 +18,9 @@ The purpose of this project is to find out what makes a movie becomes really pop
 
 The data used for this project was taken from IMDB APIs, which contains a list of movies produced before 2016. In total there are 651 list of randomly sampled movies with 32 features.
 
-Within this project, the main research question that will be answered is about the popularity of the movie. Which attribute that makes a movie become so popular? The possible metrics that can determine whether a mavie is popular or not is how well they perform in the box office. However, we don't have this data in the dataset. Hence, considering the available dataset, one of the metric that can represent the popularity of the movie is the number of user votes in IMDB, `imdb_num_votes`. Thus, the the number of user votes will be the response variable and then, several explanatory variables will be used in order to build linear regression model and predict the number of votes a movie has in any given year.
+Within this project, the main research question that will be answered is about the popularity of the movie. Which attribute that makes a movie become so popular? The possible metrics that can determine whether a movie is a popular movie or not is how well they perform in the box office. However, we don't have this data in the dataset. Hence, considering the available dataset, one of the metric that can represent the popularity of the movie is the number of user votes in IMDB, `imdb_num_votes`. Thus, the the number of user votes will be the response variable and then, several explanatory variables will be used in order to build linear regression model and predict the number of votes a movie has in any given year.
 
-First, an exploratory data analysis to check which variables that will be a good predictor for the linear regression model will be examined. Then, the forward selection method will be used to build multivariate regression model. Finally, the regression model will be used to predict the number of votes The New Guys movie has (which is not available in the dataset yet).
+First, an exploratory data analysis to check which variables that will be a good predictor for the linear regression model will be examined. Then, the forward selection method will be used to build multiple linear regression model. Finally, the regression model will be used to predict the number of votes The New Guys movie has (which is not available in the dataset yet).
 
 ******************************************************************
 
@@ -229,7 +229,7 @@ moviesUserRating <- movies %>%
                     dplyr::select(imdb_rating, critics_score, audience_score)
 ggpairs(moviesUserRating)
 ```
-From the plot above, we can see that all of these three variables are highly correlated with one another. Adding all of three variables into the model wil not increase the adjusted R-squared and will only make the estimate of the coefficient in the linear model become unreliable. It looks like that the variable `imdb_rating` can represent the other two variables very well. Hence, we are only going to include `imdb_rating` variable as one of the explanatory variable of the linear model.
+From the plot above, we can see that all of these three variables are highly correlated with one another. Adding all of three variables into the model will not increase the adjusted R-squared and will only make the estimate of the coefficient in the linear model become unreliable. It looks like that the variable `imdb_rating` can represent the other two variables very well. Hence, we are only going to include `imdb_rating` variable as one of the explanatory variable of the linear model.
 
 ### Model Selections for Linear Regression
 
@@ -340,7 +340,7 @@ $$Votes = \beta_0 + \beta_1*actorStatus + \beta_3*directorStatus+\beta_4*genre+\
 
 
 ### Model Diagnostics
-In order to check whether our linear regression model can be determined as valid model, then we need to check certain criteria to make sure that the model fulfill the linearity conditions. These three criteria are:
+In order to check whether our linear regression model can be determined as valid model, then we need to check certain criteria to make sure that the model fulfill the linearity conditions. These four criteria are:
 
 * Linear relationship between numerical variable of predictors and response.
 * Nearly normal residuals with mean around 0.
@@ -373,7 +373,7 @@ The plot doesn't look good at all where there is a fan-shaped residuals from the
 
 WLS corrects the variance in each observation depending on its magnitude. If the observation has a small variance, then the weighting would be high. Meanwhile if the observation has a high variance, then the weighting would be small to compensate the high variance. 
 
-Aside of that, the independent variable will be transformed into the natural log scale of the original value to reduce the magnitude of the extreme outliers that we have seen from the previous plot. Also, transformation of response variable will be beneficial to fix the residuals normality. So, let's apply the transformation.
+Aside of that, the dependent variable will be transformed into the natural log scale of the original value to reduce the magnitude of the extreme outliers that we have seen from the previous plot. Also, transformation of response variable will be beneficial to fix the residuals normality. So, let's apply the transformation.
 ```{r}
 wls       <- 1/fitted( lm(abs(residuals(regModel))~fitted(regModel)))^2
 regModelWeight <-lm(log(imdb_num_votes) ~ imdb_rating + actorStatus + directorStatus+top200_box+genre, data=movies, weights = wls)
@@ -437,9 +437,9 @@ Before we use the linear regression model to predict a movie, let's check the su
 summary(regModelWeight)
 ```
 
-From the summary above, we can see that because of the weighting method, now we have adjusted R-squared value of 92%. Also based on the coefficient of the estimate, we can conclude that the intercept correspond to an action movie, directed by someone who has director status = 1, starred by the actor who has actor status = 1, and the movie didn't make it to top 200 Box Office List of the BoxOfficeMojo.
+From the summary above, we can see that because of the weighting method, now we have adjusted R-squared value of ~79%. Also based on the coefficient of the estimate, we can conclude that the intercept correspond to an action movie, directed by someone who has director status = 1, starred by the actor who has actor status = 1, and the movie didn't make it to top 200 Box Office List of the BoxOfficeMojo.
 
-The coefficient of the estimate makes sense, since the higher the actor and director status is, the more the coefficient estimate is, which means that a movie will have a higher number of votes.
+The coefficient of the estimate does makes sense, since the higher the actor and director status is, the more the coefficient estimate is, which means that a movie will have a higher number of votes.
 
 **********************************************************
 
@@ -485,9 +485,9 @@ We can see that the linear model predict that The Nice Guys, with all of the giv
 
 ### Conclusion
 
-In this project, the linear regression model to predict the popularity of a movie has been built. In order to do so, one of the popularity metrics, which is the number of voters on a movie in IMDB is chosen. For the explanatory variables, IMDB rating, the genre of the movie, whether or not a movie is in tp 200 Box Office List in BoxOfficeMojo, and two new features, actor status and director status, are used. From these, the following conclusions can be drawn:
+In this project, the linear regression model to predict the popularity of a movie has been built. The purpose of the model is to predict one of the movie popularity metrics, which is the number of the voters in IMDB. For the explanatory variables: IMDB rating, the genre of the movie, whether or not a movie is in tp 200 Box Office List in BoxOfficeMojo, and two new features, actor status and director status, are used. From these, the following conclusions can be drawn:
 
-* The model yields to the adjusted R-squared value of ~ 74%, which means that 74 % of the variability in the number of IMDB voters can be explained in the model.
+* The model yields to the adjusted R-squared value of ~ 79%, which means that 79 % of the variability in the number of IMDB voters can be explained in the model.
 * The data needs to be transformed and the model needs to be weighted in order to address the heteroscedascity that is apparent from initial model.
 * The popularity of the movie can be predicted in the end using the regression model since the model fulfill all of the criteria in model diagnostics.
 
@@ -495,5 +495,5 @@ In this project, the linear regression model to predict the popularity of a movi
 In this project, there are shortcomings that can be improved for future research. These shortcomings are:
 
 * There are a lot of more reliable metrics to define the popularity of a movie, for example how much money does a movie get in its premiere week and so on. These data  can be very interesting to explore in the future.
-* There are also a lot more explanatory variables that are not currently present in the dataset that can be a very good predictor to assess the popularity of the movie such as how much is the production budget of the movie or who wrote the screenplay of the movie or how many users in IMDB click the url of the movie.
+* There are also more explanatory variables that are not currently present in the dataset that can be a very good predictor to assess the popularity of the movie such as how much is the production budget of the movie or who wrote the screenplay of the movie or how many users in IMDB click the url of the movie.
 
