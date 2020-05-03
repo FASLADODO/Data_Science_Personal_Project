@@ -47,8 +47,11 @@ library(MASS)
 load("movies.Rdata")
 ```
 
-Next, we want to check whether the dataset contains any 'NA' value. If yes, then we need to drop them since they will not give us any meaningful information to the analysis.
-
+Next, we want to check whether the dataset contains any 'NA' value. If yes, We need to see how many rows containing the missing value.
+```{r}
+sum(apply(movies, 1, anyNA))
+```
+As we can see, there are 32 rows containing missing value. However, since we have 651 rows, dropping these missing values will be an option since the proportion of the missing values is very tiny compared to the sample size.
 ```{r}
 movies <- na.omit(movies)
 ```
