@@ -1,0 +1,499 @@
+---
+title: "Multivariate Regression for Movie Prediction"
+output: 
+  html_document: 
+    toc: yes
+    toc_float: true
+    toc_collapsed: true
+  toc_depth: 3
+  number_sections: true
+  theme: lumen
+---
+
+The purpose of this project is to find out what makes a movie becomes really popular based on several features. First, an exploratory data analysis will be conducted and then, multivariate linear regression to predict the popularity of the movie will be built.
+
+*******************************************************************
+
+## Data and Research Question
+
+The data used for this project was taken from IMDB APIs, which contains a list of movies produced before 2016. In total there are 651 list of randomly sampled movies with 32 features.
+
+Within this project, the main research question that will be answered is about the popularity of the movie. Which attribute that makes a movie become so popular? The possible metrics that can determine whether a mavie is popular or not is how well they perform in the box office. However, we don't have this data in the dataset. Hence, considering the available dataset, one of the metric that can represent the popularity of the movie is the number of user votes in IMDB, `imdb_num_votes`. Thus, the the number of user votes will be the response variable and then, several explanatory variables will be used in order to build linear regression model and predict the number of votes a movie has in any given year.
+
+First, an exploratory data analysis to check which variables that will be a good predictor for the linear regression model will be examined. Then, the forward selection method will be used to build multivariate regression model. Finally, the regression model will be used to predict the number of votes The New Guys movie has (which is not available in the dataset yet).
+
+******************************************************************
+
+## Scope of Inference
+Since the list of movies is randomly sampled, then we can agree that the generalizabity of the data can be justified. However, since there is no random assignment, then the causality can't be drawn from the data. All of the information that can be gained are only in the scope of correlation or association.
+
+
+****************************************************************
+
+## Exploratory Data Analysis
+
+In this section, we will look at several variables that might be an interesting predictor to choose when we build the linear regression model. Before we begin, let's import the relevant libraries as well as the dataset itself.
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+library(statsr)
+library(reshape2)
+library(GGally)
+library(MASS)
+```
+
+```{r load-data}
+load("movies.Rdata")
+```
+
+Next, we want to check whether the dataset contains any 'NA' value. If yes, then we need to drop them since they will not give us any meaningful information to the analysis.
+
+```{r}
+movies <- na.omit(movies)
+```
+
+Now, let's start to investigate the first variable that might be interesting to be included for the feature in multivariate regression model, which is the genre of the movie.
+
+### Genre and IMDB User Number of Votes
+
+To see whether there might be an insight about movies' number of voters based on their genre, first let's check the summary of what kind of genre that are available in the dataset.
+```{r}
+movies %>% group_by(genre) %>%
+           summarise(count=n())
+```
+From the summary table above, we can see that there are 15 movies which have a genre called 'Other', which is unclear what kind of genre that these movies have. This is not going to be insightful for the investigation, so it will be wise to omit them from the investigation.
+```{r}
+movies <- movies %>% filter (genre != 'Other')
+```
+
+Next, let's create a new data frame which contains only the genre and the mean of the imdb user votes. The reason of why we choose to average the number of votes in each genre is because the number of movies in which each genre represents is not equal. It will not be wise to sum up the number of votes of 50 movies with action genre and compare them with the sum of 120 movies with drama genre.
+```{r}
+dataGenre <- movies %>%  group_by(genre) %>%
+                summarise(meanVotes = mean(imdb_num_votes)) %>%
+                arrange(desc(meanVotes))
+dataGenre 
+```
+From the data above, we can see that on average, the movie with science fiction and fantasy genre has a better chance to find its audience and hence, become more popular. Meanwhile, a movie with art house and documentary genre on average will be more difficult to find its audience.
+
+Next, let's visualize the result in a horizontal bar chart.
+
+```{r, fig.align='center',fig.width = 10, fig.height=6}
+ggplot(dataGenre, aes(x = meanVotes, y = reorder(genre, meanVotes), fill = reorder(genre, meanVotes))) +
+         geom_bar(stat = "identity") +
+      theme(legend.position = "none") +
+      labs(
+        x = "average number of votes", y = NULL)
+```
+From the visualization, it can be seen and concluded that the movie with science fiction, fantasy, action, and thriller will relatively easier to find its audience compared to movie with other genre. In order to include this feature in the linear regression model, later we need to encode this genre into discrete values.
+
+### Movie Release Month and IMDB User Number of Votes
+Next, we also want to investigate the possible correlation between the popularity of the movie with the month a movie has been released. First, let's visualize the distribution of the data points with box-plot.
+```{r, fig.align='center',fig.width = 10, fig.height=6}
+ggplot(data = movies, aes(x = factor(thtr_rel_month), y = imdb_num_votes, fill = (factor(thtr_rel_month)))) +
+       geom_boxplot() +
+ theme(legend.position = "none") +
+      labs(
+        x = "Month", y = "Number of votes")
+```
+From the box-plot, we can see that in every month, there are several outliers. This is somehow expected because there must be several great movies that are released in any given month and become much more popular compared to the other movies. Thus, it will be insigthful to see what is the average number of votes the IMDB users have given to movies in any particular month. Since it is pretty much difficult to see clearly the mean difference between movies in each month, let's re-plot the mean with a bar plot.
+```{r}
+meanVote <- movies %>% group_by(thtr_rel_month) %>%
+            summarise(meanVotes = mean(imdb_num_votes)) %>%
+            dplyr::select(thtr_rel_month, meanVotes)
+```
+
+```{r, fig.align='center',fig.width = 10, fig.height=6}
+meanVote %>% ggplot(aes(x = thtr_rel_month, y = meanVotes)) +
+             geom_bar(stat = "identity", fill='#ef9c5c') +   geom_text(aes(label = round(meanVotes)), vjust = 1.5, color = "black")  +
+            theme(legend.position = "none") +
+      labs(
+        x = "Month", y = "Average number of votes")
+```
+
+As we can see, a movie that is released in around March, June, July, November, and December has a higher chance to be more popular compared to the movie that is released in January or February or other months. However with this data, it is particularly important to note that a movie will might have higher competitor when it is released in March, June, July, or December compared to any other month. So it is wise for a quality movie with a small budget to have a released date around these month.
+
+Same as the genre, these data regarding month later will be encoded to discrete value to be included as one of the explanatory variable for linear regression model.
+
+### Movie Director and IMDB User Number of Votes
+
+Next, let's find out what is the influence of the movie director to the number of voters of their movies. In order to do this, first let's create a new data frame which contains the name of the director and the mean of votes that their movies have. The reason on why we choose the mean instead of aggregating it is the same with the one with the genre. Different directors directed different amount of movies. It will not be wise to sum up the number of votes of the movies and to compare the directors with 10 movies with the directors with 2 movies.
+
+```{r}
+dataDirector <- movies %>%  group_by(director) %>%
+                summarise(meanVotes = mean(imdb_num_votes)) %>%
+                arrange(desc(meanVotes))
+dataDirector20 <- dataDirector[1:20,]
+```
+
+Next, let's visualize the result that contains the top 20 most popular directors from the perspective of the average of number of voters of the movies that they have been directed.
+
+```{r,fig.align='center',fig.width = 10, fig.height=6}
+ggplot(dataDirector20, aes(x = meanVotes, y = reorder(director, meanVotes), fill = reorder(director, meanVotes))) +
+         geom_bar(stat = "identity")+
+ theme(legend.position = "none") +
+      labs(
+        x = "average number of votes", y = NULL)
+```
+
+We have Christopher Nolan as the director of the most popular movie, which is not surprising at all. We have Gary Ross at the number two, and James Cameron, Gus Van Sant, and Quentin Tarantino as the top five directors with the most popular movies. Let's see the summary of the new data frame. 
+```{r}
+summary(dataDirector)
+```
+From the summary statistics above, we can see that the minimum number of IMDB voters a movie can get in the dataset is 183 and the max is 802006, which in our case is for Christopher Nolan. From the graph above, we can conclude that if a movie is directed by any of the director listed above, then the higher the chance of that movie to become popular with high number of votes.
+
+Next, we want to extract a new feature for this case, in which the directors will be classified into 8 different categories, with 1 being the least popular and 8 being the most popular one. This feature later will be included as one of the explanatory variable for multiple linear regression to predict the number of IMDB voters in a movie.
+
+However, looking at the summary statistic above,  we know that the mean value is much higher than the median, which means that we can confidently say that the graph will be right-skewed. Hence, special attention for the categorization will be emphasized in the lower number. Let's create the new feature.
+```{r}
+dataDirector <- dataDirector %>%
+                mutate(directorStatus = if_else(meanVotes < 3000,"1", if_else(meanVotes < 6000, "2", if_else(meanVotes < 10000, "3", if_else(meanVotes < 25000,"4", if_else(meanVotes<50000,"5",if_else(meanVotes<100000,"6", if_else(meanVotes<200000,"7","8"))))))))
+```
+After we create a new feature to be included as the explanatory variable, next let's check the distribution of our classification.
+```{r}
+dataDirector %>% group_by(directorStatus) %>%
+                 summarise(count=n())
+```
+The new feature looks pretty solid, in which there is no status with very high number of directors in it nor too little. Finally, let's add our new feature to our original dataset.
+
+```{r}
+movies <- left_join(movies,dataDirector, by="director", select(directorStatus))
+```
+
+
+### Movie Actor and IMDB User Number of Votes
+
+Next, let's check what is the association between main actors of a movie and the number of IMDB voters. The procedure will be exactly the same as the one with the director above. First, we need to create a new data frame which contains only the name of the actors and the average number of IMDB votes of the movie that they starred in.
+```{r}
+dataActor <- movies %>%  group_by(actor1) %>%
+                summarise(meanVotes = mean(imdb_num_votes)) %>%
+                arrange(desc(meanVotes))
+dataActor20 <- dataActor[1:20,]
+```
+
+Next, let's visualize the top 20 actors with the most number of IMDB votes.
+
+```{r,fig.align='center',fig.width = 10, fig.height=6}
+ggplot(dataActor20, aes(x = meanVotes, y = reorder(actor1, meanVotes), fill = reorder(actor1, meanVotes))) +
+         geom_bar(stat = "identity")+
+   theme(legend.position = "none") +
+      labs(
+        x = "average number of votes", y = NULL)
+```
+From the graph above, we can see that Bradley Cooper is in the number one position of the actors starred in movies with the highest average number of voters in IMDB. The result does make sense since all of the actors that are listed above are not unfamiliar. Overall, we can say that the more famous the main actor a movie has, then the better the probability of that movie to become popular.
+
+Next, we want to extract or engineer a new feature for the case with actors. The new feature will be the same as the one with the director above, in which there will be 8 different categories to classify the main actors in a movie, with 1 being the least popular and 8 being the most popular category. But first, let's see the summary of the new data frame.
+```{r}
+summary(dataActor)
+```
+From the table above, we see the pattern that the mean is much larger than the median, which means that the distribution will be right-skewed. Hence in order to create a new feature, more emphasize of classification will be taken for the smaller number in around the median. 
+```{r}
+dataActor <- dataActor %>%
+                mutate(actorStatus = if_else(meanVotes < 3000,"1", if_else(meanVotes < 6000, "2", if_else(meanVotes < 10000, "3", if_else(meanVotes < 25000,"4", if_else(meanVotes<50000,"5",if_else(meanVotes<100000,"6", if_else(meanVotes<200000,"7","8"))))))))
+```
+Next, let's see the distribution of our new feature.
+```{r}
+dataActor %>% group_by(actorStatus) %>%
+                 summarise(count=n())
+```
+The distribution of the new feature looks pretty solid as well with the number of actors in each category is pretty much balanced. Now we can include this new feature into the original data frame 'movies'. 
+```{r}
+movies <- left_join(movies,dataActor, by="actor1")
+```
+
+***************************************************************************
+
+## Multiple Linear Regression Model
+
+In this section, the multiple linear regression model will be built based on the features discussed in the exploratory data analysis section and with the addition of several other variables. The explanatory variables that will be tried to incorporate in the forward selection method to build the final regression model are:
+
+* `genre`, which is the genre of the movie.
+* `thtr_rel_month`, which is the month the movie was released.
+* `actorStatus`, which is the new feature extracted from `actor1` variable.
+* `diretorStatus`, which is the new feature extracted from `director` variable.
+* `imdb_rating`, which is the rating of a movie in IMDB.
+* `audience_score`, which is the rating of audience in RottenTomatoes.
+* `critics_score`, which is the the critics score of a movie in RottenTomatoes.
+* `top200_box`, which is whether or not a movie is in the Top 200 Box Office list on BoxOfficeMojo.
+
+The response variable will be `imdb_num_votes`, which indicate how many users have vote on a movie. Note that not all of the variables will make it into the final model of the multiple linear regression because the variable will be selected based on the value of adjusted R-squared they contribute.
+
+### Collinearity Check Between Rating Variables 
+
+Before we start into the model selection section, we need to check if there is a collinearity between variables. Among all of the variables, the variables which contain ratings from the user and critics are suspected to have dependency with another, i.e if the movie has a good user rating on RottenTomatoes, then it can be suspected that the movie will have a good user rating on IMDB too. 
+
+These variables that are dependent to each other will create a collinearity which make the estimate of the coefficient in linear model become unreliable. So, let's check the correlation between the variables `imdb_rating`, `audience_rating`, and `critics_score`.
+
+```{r,fig.align='center',fig.width = 10, fig.height=6}
+moviesUserRating <- movies %>% 
+                    dplyr::select(imdb_rating, critics_score, audience_score)
+ggpairs(moviesUserRating)
+```
+From the plot above, we can see that all of these three variables are highly correlated with one another. Adding all of three variables into the model wil not increase the adjusted R-squared and will only make the estimate of the coefficient in the linear model become unreliable. It looks like that the variable `imdb_rating` can represent the other two variables very well. Hence, we are only going to include `imdb_rating` variable as one of the explanatory variable of the linear model.
+
+### Model Selections for Linear Regression
+
+For the model selection in this project, the forward selection method will be used. This means that we are going to start from the empty model and stepwise adding the variable into the model. The metrics that will be used to determine whether the explanatory variables should be included in the final model is the adjusted R-squared. If the adjusted R-squared is not increased after the addition of an explanatory variable, then that variable will be omitted from the model.
+
+There are two metrics that can be used to determine whether we should take a variable to build a linear model or not. Aside of R-squared, there is also p-value that can be used. However, since the p-value is heavily dependent on the significance level that we need to set in advance, then the model based on p-value won't be that reliable. On the other hand, the model with adjusted R-squared is going to be more reliable and robust.
+
+#### Forward Selection: First Step
+First, let's start with the empty model, and add one feature at a time. Since in there are six explanatory variables that will be considered for linear regression model, then we need to check the adjusted R-squared of each of the variable and choose the one with the highest R-squared value.
+
+```{r}
+allModels <- function(){
+    m1 <- lm(imdb_num_votes ~ imdb_rating, data = movies)
+    m2 <- lm(imdb_num_votes ~ top200_box, data = movies)
+    m3 <- lm(imdb_num_votes ~ actorStatus, data = movies)
+    m4 <- lm(imdb_num_votes ~ directorStatus, data = movies)
+    m5 <- lm(imdb_num_votes ~ genre, data = movies)
+    m6 <- lm(imdb_num_votes ~ thtr_rel_month, data = movies)
+    return(list(summary(m1)$adj.r.squared, summary(m2)$adj.r.squared,
+                summary(m3)$adj.r.squared,summary(m4)$adj.r.squared,summary(m5)$adj.r.squared,summary(m6)$adj.r.squared))}
+
+summary = allModels()
+summary
+```
+From the result above, we can clearly see that the feature `directorStatus` has the highest adjusted R-squared in the first step. Hence, for the first step, we take `directorStatus` as the explanatory variables and proceed to the second step to obtain the next explanatory variable, considering the new model with `directorStatus` as one of the predictor.
+
+#### Forward Selection: Second Step
+```{r}
+
+allModels <- function(){
+    m1 <- lm(imdb_num_votes ~ directorStatus+imdb_rating, data = movies)
+    m2 <- lm(imdb_num_votes ~ directorStatus+actorStatus, data = movies)
+    m3 <- lm(imdb_num_votes ~ directorStatus+top200_box, data = movies)
+    m4 <- lm(imdb_num_votes ~ directorStatus+genre, data = movies)
+    m5 <- lm(imdb_num_votes ~ directorStatus+thtr_rel_month, data = movies)
+    return(list(summary(m1)$adj.r.squared, summary(m2)$adj.r.squared,
+                summary(m3)$adj.r.squared,summary(m4)$adj.r.squared,summary(m5)$adj.r.squared))}
+
+summary = allModels()
+summary
+
+```
+From the summary above, we can see that the next significant predictor is `actorStatus` variable, since it will give us the highest gain of adjusted R-squared. Then, we proceed to the third step with the new model considering `directorStatus` and `actorStatus` as predictors.
+
+#### Forward Selection: Third Step
+```{r}
+
+allModels <- function(){
+   m1 <- lm(imdb_num_votes ~ directorStatus+actorStatus+imdb_rating, data = movies)
+    m2 <- lm(imdb_num_votes ~ directorStatus+actorStatus+top200_box, data = movies)
+   m3 <- lm(imdb_num_votes ~ directorStatus+actorStatus+genre, data = movies)
+    m4 <- lm(imdb_num_votes ~ directorStatus+actorStatus+thtr_rel_month, data = movies)
+
+    return(list(summary(m1)$adj.r.squared, summary(m2)$adj.r.squared,
+                summary(m3)$adj.r.squared,summary(m4)$adj.r.squared))}
+
+summary = allModels()
+summary
+
+```
+
+From the summary above, we can conclude that the next variable that will be included into the model is `top200_box`. Next, let's proceed to the fourth step with the new model with `actorStatus`, `directorStatus`, and `top200_box` as the predictors.
+
+#### Forward Selection: Fourth Step
+```{r}
+
+allModels <- function(){
+m1 <- lm(imdb_num_votes ~ directorStatus+actorStatus+top200_box+imdb_rating, data = movies)
+m2 <- lm(imdb_num_votes ~ directorStatus+actorStatus+top200_box+genre, data = movies)
+m3 <- lm(imdb_num_votes ~ directorStatus+actorStatus+top200_box+thtr_rel_month, data = movies)
+
+
+    return(list(summary(m1)$adj.r.squared, summary(m2)$adj.r.squared,
+                summary(m3)$adj.r.squared))}
+
+summary = allModels()
+summary
+```
+
+From the summary above, we can see that the next variable that will be included in the model is `imdb_rating` since it will give us the higher adjusted R squared for the linear model. Next, let's check whether the enxt variable will give us the higher adjusted R-squared or not.
+
+#### Forward Selection: Fifth Step
+```{r}
+allModels <- function(){
+m1 <- lm(imdb_num_votes ~ directorStatus+actorStatus+top200_box+imdb_rating+genre, data = movies)
+m2 <- lm(imdb_num_votes ~ directorStatus+actorStatus+top200_box+imdb_rating+thtr_rel_month, data = movies)
+
+    return(list(summary(m1)$adj.r.squared, summary(m2)$adj.r.squared))}
+
+summary = allModels()
+summary
+```
+
+From the summary of the result above, we can see that `genre` variable is giving us higher adjusted R-squared value. This means that we can include this variable to the explanatory variables for multiple linear regression model. Next, let's check whether the last variable, which is `thtr_rel_month` will give us the higher adjusted R-squared value.
+
+#### Forward Selection: Sixth Step
+```{r}
+m1 <- lm(imdb_num_votes ~ directorStatus+actorStatus+top200_box+imdb_rating+genre + thtr_rel_month, data = movies)
+
+summary(m1)$adj.r.squared
+```
+
+From the summary above, we can clearly see that the adjusted R-squared value will in fact become lower when we include variable `thtr_rel_month`. Because of this, the variable `thtr_rel_month` should not be included in the final linear regression model.
+
+Finally, now we have the final set of explanatory variables that will be used as predictors to predict the number of votes of a movie in IMDB. The mathematical equation of the linear regression model can be defined as follows:
+
+$$Votes = \beta_0 + \beta_1*actorStatus + \beta_3*directorStatus+\beta_4*genre+\beta_5*imdbRating+\beta_6*Top200Box$$
+
+
+### Model Diagnostics
+In order to check whether our linear regression model can be determined as valid model, then we need to check certain criteria to make sure that the model fulfill the linearity conditions. These three criteria are:
+
+* Linear relationship between numerical variable of predictors and response.
+* Nearly normal residuals with mean around 0.
+* Constant variability of residuals.
+* Independent residuals.
+
+Now let's check the model whether it fulfills the criteria.
+
+#### Linear Relationship Between Numerical Predictor ~ Response Variable and Residuals Variability
+
+In order to check this criteria, first we need to build a linear regression model, then check the plot between numerical predictor and the residuals of the regression model. First, let's build the linear regression model.
+```{r}
+regModel <- lm(imdb_num_votes ~ directorStatus+actorStatus+top200_box+imdb_rating+genre, data = movies)
+```
+Since there is only one numerical variable in the explanatory variables, which is `imdb_rating`, then the residual plots will be compared to the `imdb_rating` variable. So, let's visualize the plot.
+```{r,fig.align='center',fig.width = 10, fig.height=6}
+ggplot( data=movies , aes(x = imdb_rating, y = regModel$residuals)) +
+  geom_jitter() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+```
+From the plot above, we can see that most of the data points can be captured by the linear model, which explains why the adjusted R-squared value is about 73,7%. However, if we take a closer look at the plot, the data points are not that homoscedastic, where the variance of the number of votes of movie with the higher rating is very high. This means that the linearity of model might be violated and as the result, we will get a fan-shaped residuals as follows. 
+
+```{r,fig.align='center',fig.width = 10, fig.height=6}
+ggplot( data=movies , aes(x = regModel$fitted, y = regModel$residuals)) +
+  geom_jitter() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+```
+
+The plot doesn't look good at all where there is a fan-shaped residuals from the model and thus, the linearity can't be guaranteed and the linearity criteria has been violated. In order to correct this, let's apply the weighting method for the linear regression model, which is the Weighted Least Squares (WLS) method. 
+
+WLS corrects the variance in each observation depending on its magnitude. If the observation has a small variance, then the weighting would be high. Meanwhile if the observation has a high variance, then the weighting would be small to compensate the high variance. 
+
+Aside of that, the independent variable will be transformed into the natural log scale of the original value to reduce the magnitude of the extreme outliers that we have seen from the previous plot. Also, transformation of response variable will be beneficial to fix the residuals normality. So, let's apply the transformation.
+```{r}
+wls       <- 1/fitted( lm(abs(residuals(regModel))~fitted(regModel)))^2
+regModelWeight <-lm(log(imdb_num_votes) ~ imdb_rating + actorStatus + directorStatus+top200_box+genre, data=movies, weights = wls)
+
+standardRes = rstandard(regModelWeight)
+```
+
+Next, let's plot the weighted linear model with the numerical variable
+```{r,fig.align='center',fig.width = 10, fig.height=6}
+ggplot( data=movies , aes(x = imdb_rating, y = standardRes)) +
+  geom_jitter() +
+  geom_hline(yintercept = 0, linetype = "dashed")+
+   theme(legend.position = "none") +
+      labs( y = "Standardized Residuals")
+```
+The weighted linear model looks much better than the one without weighting function.Now, let's check the variability of the residual plots.
+```{r,fig.align='center',fig.width = 10, fig.height=6}
+ggplot( data=movies , aes(x = regModelWeight$fitted.values, y = standardRes)) +
+  geom_jitter() +
+  geom_hline(yintercept = 0, linetype = "dashed")+
+   theme(legend.position = "none") +
+      labs(y = "Standardized Residuals")
+```
+From the plot above, now we can see that the residual looks better and now is more or less centered around 0. There is no fan-shaped residual anymore and we can say that the model fulfills the linearity and residual variability criteria.
+
+#### Normality of the Residuals
+
+Next, we want to check the normality of the error of the model. If we have an error that is nearly normal, then we can make statistical inference based on the linear model. First, let's create a histogram to see the distribution of the residuals
+
+
+```{r,fig.align='center',fig.width = 10, fig.height=6}
+ggplot( data=movies , aes( standardRes)) +
+  geom_histogram(bins = 20,fill='#ef9c5c') +
+   theme(legend.position = "none") +
+      labs(
+        x = "Standardized Residuals", y = "Count")
+```
+
+From the histogram above, we can see that the residuals are mainly centered at 0. Let's confirm the normality of the residuals with the QQ plot.
+
+```{r,fig.align='center',fig.width = 10, fig.height=6}
+qqnorm(standardRes)
+qqline(standardRes)
+```
+We can see from the QQ plot above that most of the residuals are centered in around the normal line. However, there are slight deviations from the normal line in both end of the tails. This is expected since we have an extreme outliers. However, due to the large number of samples, we can say that the normality of the residuals is fairly satisfied.
+
+#### Independence of Residuals
+
+Next, let's check for the independence of residuals to check whether the variables in our linear regression model are independent observations. 
+
+```{r,fig.align='center',fig.width = 10, fig.height=6}
+plot(standardRes)
+```
+
+From the plot above, we can see that there is no pattern in the order of the data collection. The plot seems scattered randomly along x-axis with no discoverable pattern. This means that there is no time series structure in the data and we can say that the variables in our model are independent observations.
+
+### Coefficient Estimate Interpretations
+Before we use the linear regression model to predict a movie, let's check the summary of the linear regression model to see what is the assumption that the model has taken and to see how significant is the explanatory variables to the model.
+
+```{r}
+summary(regModelWeight)
+```
+
+From the summary above, we can see that because of the weighting method, now we have adjusted R-squared value of 92%. Also based on the coefficient of the estimate, we can conclude that the intercept correspond to an action movie, directed by someone who has director status = 1, starred by the actor who has actor status = 1, and the movie didn't make it to top 200 Box Office List of the BoxOfficeMojo.
+
+The coefficient of the estimate makes sense, since the higher the actor and director status is, the more the coefficient estimate is, which means that a movie will have a higher number of votes.
+
+**********************************************************
+
+## Predict The Nice Guys
+
+After building up the linear regression model, we can now predict the number of votes of the movie that hasn't been released based on its main actor, the director, the genre of the movie, and the rating of the movie. Now, let's say we want to predict how many votes that the movie The Nice Guys will have considering all of the variables mentioned before.
+
+First let's take a look at the `actorStatus` variable of The Nice Guys, which has Ryan Gosling as its main actor.
+
+```{r}
+movies %>% group_by(actor1) %>%
+           filter(actor1 == 'Ryan Gosling')
+```
+We have seen above that Ryan Gosling is scaled at 7 for actor status. Next, let's find out the `directorStatus` variable for Shane Black, the director of the movie.
+```{r}
+movies %>% group_by(director) %>%
+           filter(director == 'Shane Black') %>%
+           summarise(directorStatus)
+```
+As we can see above, Shane Black is scaled 8 for director status, which means that the movie that he directed has a high potential of becoming popular. Next, let's plug-in all of the necessary predictors that have been gathered from IMDB page and collect all of them into a data frame.
+```{r}
+TheNiceGuys <- data.frame(actorStatus = '7', directorStatus = '8', top200_box= 'yes', imdb_rating=7.4, genre='Action & Adventure')
+```
+
+Next, we can predict how many voters in IMDB that The Nice Guys will have.
+
+```{r}
+predict(regModelWeight, TheNiceGuys)
+```
+
+As we can see above, we can see that the predict function give us the fitted value. Note that the independent variable `imdb_num_votes` has been transformed into the natural logarithmic scale of its original value. Hence, in order to get the real number of votes, we need to transform the value listed by prediction.
+```{r}
+pred = 2.718^12.71517
+pred
+
+```
+
+We can see that the linear model predict that The Nice Guys, with all of the given predictor variables, will have 332319 number of votes in IMDB, which is an overestimation, since the actual number of votes is in around 260000. The underestimation or overestimation in the regression model is very much expected as it will only give us an estimation of the value, not the actual value.
+
+*********************************************************************
+
+## Conclusion and Future Directions
+
+### Conclusion
+
+In this project, the linear regression model to predict the popularity of a movie has been built. In order to do so, one of the popularity metrics, which is the number of voters on a movie in IMDB is chosen. For the explanatory variables, IMDB rating, the genre of the movie, whether or not a movie is in tp 200 Box Office List in BoxOfficeMojo, and two new features, actor status and director status, are used. From these, the following conclusions can be drawn:
+
+* The model yields to the adjusted R-squared value of ~ 74%, which means that 74 % of the variability in the number of IMDB voters can be explained in the model.
+* The data needs to be transformed and the model needs to be weighted in order to address the heteroscedascity that is apparent from initial model.
+* The popularity of the movie can be predicted in the end using the regression model since the model fulfill all of the criteria in model diagnostics.
+
+### Future Directions
+In this project, there are shortcomings that can be improved for future research. These shortcomings are:
+
+* There are a lot of more reliable metrics to define the popularity of a movie, for example how much money does a movie get in its premiere week and so on. These data  can be very interesting to explore in the future.
+* There are also a lot more explanatory variables that are not currently present in the dataset that can be a very good predictor to assess the popularity of the movie such as how much is the production budget of the movie or who wrote the screenplay of the movie or how many users in IMDB click the url of the movie.
+
