@@ -98,7 +98,7 @@ brfss2013 %>%
 
 ```
 
-If we take a closer look at the data regarding the duration of the sleep, it seems like the variable of the duration is measured in hour. However, there are more than 7387 cases where the respondents didn't fill the answer. Also there are couple of outliers and strange result that could heavily alter the result, as there is one person with sleeping duration of 103 hours and one person with sleeping duration of 450 hours. We need to drop this data in order to remove the skewness of the distributions.
+If we take a closer look at the data regarding the duration of the sleep, it seems like the variable of the duration is measured in hour. However, there are more than 7387 cases where the respondents didn't fill the answer. Also there are couple of strange result that could heavily alter the result, as there is one person with sleeping duration of 103 hours and one person with sleeping duration of 450 hours. We need to drop this data.
 
 Now let's take a look at the data regarding depression rate of the respondents.
 
@@ -107,7 +107,7 @@ brfss2013 %>%
   group_by(misdeprd) %>%
   summarise( n = n())
 ```
-From the data above, we can see that there are five different categories to classify the level of depression that people feel in a month. However, there are also 455669 respodents who didn't give the answer and we need to clear these data out in order to get a meaningful result.
+From the data above, we can see that there are five different categories to classify the level of depression that people feel in a month. However, there are also 455669 respodents who didn't give the answer. Although we can impute this data, but for the learning purpose of this project and due the fact we have large sample, we clear these data out instead.
 
 Now let's take a look at the number of days in a month people are feeling anxious.
 
@@ -116,7 +116,7 @@ brfss2013 %>%
   group_by(qlstres2) %>%
   summarise( n = n())
 ```
-Same as the data from sleeping duration, there are around 491288 of respondents who didn't fill the answer and there is one strange result, in which there is one person who feels anxious just once in 171 days. We need to clean these data out first. We need to filter out all of the variables which contain 'NA'.
+Same as the data from sleeping duration, there are around 491288 of respondents who didn't fill the answer and there is one strange result, in which there is one person who feels anxious just once in 171 days. 
 
 Last, let's check how often in a month the respondents feel like their mental health is not in a good condition.
 ```{r}
@@ -124,9 +124,9 @@ brfss2013 %>%
   group_by(menthlth) %>%
   summarise( n = n())
 ```
-Same as the dataset that we have observed before, we have 8627 respondents that didn't answer this type of question. Also, there are couple of outliers that will heavily alter the result, in which there is one respondent who feels that they are in a bad mental shape 5000 and 247 times in a month. We need to clear this data out in the next step.
+Same as the dataset that we have observed before, we have 8627 respondents that didn't answer this type of question. Also, there are couple of outliers that will heavily alter the result, in which there is one respondent who feels that they are in a bad mental shape 5000 and 247 times in a month. 
 
-Next, we filter the data which contains 'NA'.
+Next, although we can impute the data, but for learning purpose in this project and the fact that we have large sample, we filter the data which contains 'NA' instead.
 
 ```{r}
 dataFrame <- brfss2013 %>% 
@@ -134,7 +134,7 @@ dataFrame <- brfss2013 %>%
              select(employ1, sleptim1, qlstres2, misdeprd,menthlth)
 ```
 
-Then, let's clear out the possible outliers in the 'sleptim1','qlstres2', and 'menthlth.
+Then, let's clear out the strange result in the 'sleptim1','qlstres2', and 'menthlth.
 
 ```{r}
 dataFrame <- dataFrame %>% 
@@ -233,7 +233,7 @@ brfss2013 %>%
   summarise( n = n())
 ```
 
-From the data above, there are eight categories of income and there are 71426 respondents who chose not to answer the question. So we need to filter out this 'NA' data before processing the data.
+From the data above, there are eight categories of income and there are 71426 respondents who chose not to answer the question.
 
 Also, since eight categories is too dense to visualize, it is necessary to reduce the classification of categorization. Hence, the classification will be reduced to four categories. People with income less than \$25,000 will be grouped into one group, people with income less than \$50,000 will be grouped into one group, and the rest stays the same.
 
@@ -343,7 +343,7 @@ dataFrame_wealthy %>%
   group_by(scntwrk1) %>%
   summarise( n = n())
 ```
-From the data above, we can see that there are 162958 respondents that didn't give the answer, so we need to clear this data out. Then, let's create a new feature, which is the working status of each respondents. The working status has three categories to classifiy whether respondents work less than 35 hours, in between, or above 45 hours in a week.
+Next, let's create a new feature, which is the working status of each respondents. The working status has three categories to classifiy whether respondents work less than 35 hours, in between, or above 45 hours in a week.
 
 ```{r}
 dataWork <- dataFrame_wealthy %>%
