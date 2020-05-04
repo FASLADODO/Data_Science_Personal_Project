@@ -75,7 +75,7 @@ gss %>% group_by(natcrime) %>%
         summarise(count=n())
 ```
 
-From the data above, we can see that there are three categories to classify people's opinion regarding US' efforts to halt crimes. 21,500 respondents answered that US invest too little money to halt rising crime rates. However, there are 25,280 respondents who didn't give the answer to this question, so we need to filter them out.
+From the data above, we can see that there are three categories to classify people's opinion regarding US' efforts to halt crimes. 21,500 respondents answered that US invest too little money to halt rising crime rates. However, there are 25,280 respondents who didn't give the answer to this question.
 
 Next, variable `owngun`.
 
@@ -84,16 +84,16 @@ gss %>% group_by(owngun) %>%
         summarise(count=n())
 ```
 
-From the data, we can see that 14,000 respondents do own a gun. However, there are 315 people who refused to answer and 22,602 people didn't give the answer. Because they will be meaningless for the observation, we can exclude them out from the data.
+From the data, we can see that 14,000 respondents do own a gun. However, there are 315 people who refused to answer and 22,602 people didn't give the answer.
 
 Next, variable `fear`.
 ```{r}
 gss %>% group_by(fear) %>%
         summarise(count=n())
 ```
-We can see that there are 14010 respondents confessed that they are afraid to walk at night in their neighborhood. Also, we need to exclude people who refused to answer the question out of the data.
+We can see that there are 14010 respondents confessed that they are afraid to walk at night in their neighborhood.
 
-After checking the relevant variables, let's create a new cleaned data frame containing only the variable of interest and excluding all the 'NA' values as well as respondents who refused to answer.
+After checking the relevant variables, let's create a new cleaned data frame containing only the variable of interest and excluding all the 'NA' values as well as respondents who refused to answer. Although we can impute the 'NA' values, but for the learning purpose in this project, we want to simply exclude them from the observation.
 ```{r}
 dataFrame <- gss %>% 
              filter(!is.na(natcrime), !is.na(owngun), !is.na(fear), owngun != 'Refused') %>% 
@@ -111,7 +111,7 @@ groupCrime %>%
       geom_bar(stat = "identity", fill='#ef9c5c') +
       geom_text(aes(label = round(count,2)), vjust = 1.5, color = "black")  +
       labs(title = "Respondents Opinion on US' Effort to Halt Rising Crimes",
-      x = NULL, y = "Number of Residents") +
+      x = NULL, y = "Number of Respondents") +
       theme(plot.title = element_text(hjust = 0.5,size=14))
       
 ```
@@ -135,7 +135,7 @@ ggplot(groupCrime_and_Gun, aes(x = natcrime,y = value)) +
     geom_bar(aes(fill = variable),stat = "identity",position = "dodge") +
     geom_text(position = position_dodge(0.8), aes(label = value, fill=variable), vjust = 1, hjust=0.45, color = "white") +
     labs(title = "Respondents Opinion on US' Effort to Halt Rising Crimes",
-        x = NULL, y = "Number of Residents") +
+        x = NULL, y = "Number of Respondents") +
     guides(fill=guide_legend(title="Own a Gun?"))+
     theme(plot.title = element_text(hjust = 0.5,size=18))
 ```
@@ -216,7 +216,7 @@ ggplot(groupCrime_and_Fear, aes(x = natcrime,y = value)) +
     geom_bar(aes(fill = variable),stat = "identity",position = "dodge") +
     geom_text(position = position_dodge(0.8), aes(label = value, fill=variable), vjust = 1, hjust=0.45, color = "white") +
     labs(title = "Respondents Opinion on US' Effort to Halt Rising Crimes",
-        x = NULL, y = "Number of Residents") +
+        x = NULL, y = "Number of Respondents") +
     guides(fill=guide_legend(title="Afraid \nto walk at night?"))+
     theme(plot.title = element_text(hjust = 0.5,size=18))
 ```
