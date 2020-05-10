@@ -1,0 +1,90 @@
+Database Overview
+
+=====
+
+Author: Marcellus Ruben Winastwan
+
+=====
+
+Database: fly
+
+=====
+
+Notes:
+1.Column and table descriptions are estimates based on examination of the tables, not descriptions from the 
+data sources.
+2.Column descriptions of PK, FK, and references are descriptions of assumed relationships between tables, 
+not database constraints.
+
+=====
+
+Tables:
+
+airlines 	list of airlines name and its carrier code.
+airports	name of the airports and their locations.
+flights		flight records from year 2014.
+planes		different types of airplanes.
+
+====
+
+Table: airlines
+
+Columns
+
+1 carrier 	string 		PK*, ID of the airlines
+2 name 		string		the airlines' name
+
+====
+
+Table: airports
+
+Columns
+
+1  faa 		char(3) 	PK*, ID of the airports
+2  name 	string 		airports name
+3  lat 		double 		lattitude of the airports
+4  lon 		double 		longitude of the airports
+5  alt 		smallint
+6  tz 		tinyint
+
+====
+
+Table: flights
+
+Columns
+
+1 	year 			smallint 	year record flights	
+2 	month 			tinyint 	month record flights
+3 	day 			tinyint 	day record flights
+4 	dep_time 		smallint 	departure time of the flights
+5 	sched_dep_time 		smallint 	scheduled departure time
+6 	dep_delay 		smallint 	departure delay
+7 	arr_time 		smallint 	time arrival
+8 	sched_arr_time 		smallint 	scheduled time arrival
+9 	arr_delay 		smallint 	arrival delay
+10 	carrier 		string 		FK*, references from airlines.carrier
+11 	flight 			smallint 	flight number
+12 	tailnum 		string 		FK*, references from planes.tailnum
+13 	origin 			string 		airport origin
+14 	dest 			string 		airport destination
+15 	air_time 		smallint 	flight duration
+16 	distance 		smallint	distance covered
+
+====
+
+
+
+
+Table: planes
+
+Columns
+1 	tailnum 		string 		PK*, tail number of the plane
+2 	year 			int 		year manufactured
+3 	type 			string 		plane type
+4 	manufacturer 		string 		plane manufacturer
+5 	model 			string 		plane model
+6 	engines 		int 		number of engines
+7 	seats 			int 		total number of seats
+8 	engine			string		plane engine
+
+========================================================================================

@@ -1,0 +1,396 @@
+\documentclass[a4paper,
+							12pt,
+							oneside,
+							openright,
+							DIV10,
+							numbers=noendperiod
+							]{scrreprt} %
+							
+\usepackage{amsmath}
+\usepackage{adjustbox}
+\usepackage{mathtools}
+\usepackage{xr}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{gensymb}
+\usepackage{subfig}
+\usepackage{tabularx}
+\usepackage{notoccite}
+\usepackage{titling}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage[pass]{geometry}
+\makeatletter
+\def\BState{\State\hskip-\ALG@thistlm}
+\makeatother
+\usepackage{listings}
+\usepackage{color}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+  language=SQL,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
+
+\begin{document}
+
+
+\begin{Large}
+\begin{center}
+\textbf{Recommending Rail Tunnel Route in the US with SQL}
+\end{center}
+\end{Large}
+
+
+\noindent
+The purpose of this project is to use SQL statement in order to find the best route for a fictional transportation company that wants to build a rail tunnel that connects two airports based on several requirements or criteria. The data being used for this project are saved in Hadoop Distributed File System (HDFS). In order to query the data, Apache Hive or Impala will be used. \\
+
+\noindent
+Next after we find out which route will be the best for rail tunneling, let's say that the company starts the tunneling process. Each day, new data is continuously being generated and finally, the final data are stored in the cloud storage, which in this project is AWS S3. The second purpose of this project is to fetch these final tunneling data from cloud storage and migrate them into HDFS clusters.
+
+ 
+\begin{Large}
+\begin{center}
+\textbf{First Case: Rail Tunnel Route Recommendation}
+\end{center}
+\end{Large}
+
+\noindent
+There is a company that plans to disrupt the airline industry by building an underground high-speed passenger rail tunnel. The company needs help to decide which two major United States airports this tunnel should connect. The distance between the airports must be within a specified range, and the airports must have a large volume of air travelers flying between them in both directions. The company believes that these air travelers can be persuaded to switch to high-speed rail because of frustratingly long flight delays\\.
+
+\noindent
+\textbf{Requirements}\\
+
+\noindent
+The job is to recommend which pair of United States airports should be connected with a high-speed passenger rail tunnel. The company has given the following strict requirements:\\
+
+\noindent
+These two airports must:
+
+\begin{enumerate}
+\item Be between 300 and 400 miles apart.
+\item  Average at least 5,000 (five thousand) flights per year between them, in each direction.
+\item Among the pairs of airports that meet these requirements, you must identify the one pair that has the largest total number of seats on the planes that flew between them.
+\item The company is also interested to know the average arrival delay for flights between these two airports, because they believe that routes with a history of delayed arrivals will make it easier to persuade air travelers to switch to high-speed rail.\\
+\end{enumerate} 
+
+\noindent
+\textbf{SQL Query}\\
+
+\noindent
+In order to fulfill all of the requirements above, we need to create SQL statement of the data that are saved in the HDFS, particularly in \textbf{fly} database (The database overview and the schema of this database is given in a separate file). The following SQL statement will do the trick for this problem.
+
+\begin{lstlisting}
+SELECT round(sum(planes.seats)/10) as avg_seats,round(sum(seats)) as tot_seats, round(count(flight)/10) as avg_flight,
+avg(distance) as avg_dist, round(avg(arr_delay),2) as avg_delay,origin, dest  
+FROM flights LEFT JOIN planes
+ON flights.tailnum = planes.tailnum
+WHERE distance BETWEEN 300 AND 400
+GROUP BY origin, dest
+HAVING avg_flight > 5000
+ORDER BY tot_seats DESC NULLS LAST
+LIMIT 10;
+\end{lstlisting}
+
+\begin{table}[ht]
+\centering
+\caption{SQL output from table flights in \textbf{fly} database}
+\label{tab:my-table}
+\begin{tabular}{lllllll}
+{\color[HTML]{000000} avg\_seats} & {\color[HTML]{000000} tot\_seats} & {\color[HTML]{000000} avg\_flight} & {\color[HTML]{000000} avg\_dist} & {\color[HTML]{000000} avg\_delay} & {\color[HTML]{000000} origin} & {\color[HTML]{000000} dest} \\
+{\color[HTML]{000000} 1996597} & {\color[HTML]{000000} 19965970} & {\color[HTML]{000000} 14712} & {\color[HTML]{000000} 337} & {\color[HTML]{000000} 10.32} & {\color[HTML]{000000} SFO} & {\color[HTML]{000000} LAX} \\
+{\color[HTML]{000000} 1981059} & {\color[HTML]{000000} 19810585} & {\color[HTML]{000000} 14540} & {\color[HTML]{000000} 337} & {\color[HTML]{000000} 13.76} & {\color[HTML]{000000} LAX} & {\color[HTML]{000000} SFO} \\
+{\color[HTML]{000000} 1219235} & {\color[HTML]{000000} 12192349} & {\color[HTML]{000000} 8662} & {\color[HTML]{000000} 370} & {\color[HTML]{000000} 5.82} & {\color[HTML]{000000} PHX} & {\color[HTML]{000000} LAX} \\
+{\color[HTML]{000000} 1210173} & {\color[HTML]{000000} 12101731} & {\color[HTML]{000000} 8650} & {\color[HTML]{000000} 370} & {\color[HTML]{000000} 5.95} & {\color[HTML]{000000} LAX} & {\color[HTML]{000000} PHX} \\
+{\color[HTML]{000000} 1067278} & {\color[HTML]{000000} 10672784} & {\color[HTML]{000000} 6200} & {\color[HTML]{000000} 304} & {\color[HTML]{000000} 4.89} & {\color[HTML]{000000} PHX} & {\color[HTML]{000000} SAN} \\
+{\color[HTML]{000000} 1060204} & {\color[HTML]{000000} 10602041} & {\color[HTML]{000000} 6216} & {\color[HTML]{000000} 304} & {\color[HTML]{000000} 3.77} & {\color[HTML]{000000} SAN} & {\color[HTML]{000000} PHX} \\
+{\color[HTML]{000000} 920919} & {\color[HTML]{000000} 9209185} & {\color[HTML]{000000} 8012} & {\color[HTML]{000000} 390.6225631} & {\color[HTML]{000000} 4.22} & {\color[HTML]{000000} SLC} & {\color[HTML]{000000} DEN} \\
+{\color[HTML]{000000} 893437} & {\color[HTML]{000000} 8934374} & {\color[HTML]{000000} 7667} & {\color[HTML]{000000} 390.6222089} & {\color[HTML]{000000} 6.24} & {\color[HTML]{000000} DEN} & {\color[HTML]{000000} SLC} \\
+{\color[HTML]{000000} 867688} & {\color[HTML]{000000} 8676883} & {\color[HTML]{000000} 8484} & {\color[HTML]{000000} 399} & {\color[HTML]{000000} 1.35} & {\color[HTML]{000000} BOS} & {\color[HTML]{000000} DCA} \\
+{\color[HTML]{000000} 864009} & {\color[HTML]{000000} 8640091} & {\color[HTML]{000000} 8493} & {\color[HTML]{000000} 399} & {\color[HTML]{000000} 4.03} & {\color[HTML]{000000} DCA} & {\color[HTML]{000000} BOS}
+\end{tabular}
+\end{table}
+
+\noindent
+From the table above, we can see and conclude that the recommended tunneling route, with considering all of the criteria and requirements that have been defined before, would be in between San Francisco Airport and Los Angeles Airports. Both of the airports have the most frequent flights between them compared to other airports and the distance between them is also in between 300-400 apart. These two airports also have the most passenger traveling between them. Hence, the tunnel connecting San Francisco and Los Angeles would be ideal.\\
+
+\noindent
+\begin{Large}
+\textbf{Second Case: Migrating Tunnel Boring Data from Cloud to HDFS}\\
+\end{Large}
+
+\noindent
+Based on the analysis and on other factors, construction has begun on a tunnel connecting San Francisco and Los Angeles. The tunnel will be dug over a period of ten years. It will be dug in three different sections by three tunnel boring machines (TBMs) named Bertha II, Shai-Hulud, and Diggy McDigface.\\
+
+\noindent
+Each of these TBMs will generate a large volume of data as it operates. There are three TBM files containing the tunnel boring machine data. They are delimited text files, each containing tens of thousands of lines. They are stored in Amazon S3 in sub-directories under a directory named tbm\_sf\_la in the S3 bucket named training-coursera2.\\
+
+\noindent
+\textbf{Challenges}\\
+
+\noindent
+These are the things that these three files have in common:
+\begin{enumerate}
+\item Each file contains eight columns representing the same eight fields.
+\item The data types of the eight columns are the same in all three files.
+\item  The rows of the table represent hourly time intervals.
+\end{enumerate}
+
+\noindent
+These are the differences between these three files:
+\begin{enumerate}
+\item They use different delimiters.
+\item One of the files uses the string 999999 to represent missing values.
+\item One of the files has a header line.
+\end{enumerate}
+
+\noindent
+The main goal in this section is to fetch these three different data from cloud services and then migrate them into HDFS. After migrating all of the data, we need to store these three data into one table called tbm\_sf\_la.\\
+\\
+\\
+\\
+
+\noindent
+\textbf{Checking the Files Inside the Bucket in AWS S3}\\
+
+\noindent
+Before we start with the SQL statement to migrate the data, let's check what kinds of data that have been stored in AWS S3. In order to do this, let's write a command line.\\
+
+\begin{lstlisting}
+[training@localhost ~]$ hdfs dfs -ls s3a://training-coursera2/tbm_sf_la/
+\end{lstlisting}
+
+\begin{lstlisting}
+drwxrwxrwx   - training training          0 2020-05-08 04:02 s3a://training-coursera2/tbm_sf_la/central
+drwxrwxrwx   - training training          0 2020-05-08 04:02 s3a://training-coursera2/tbm_sf_la/north
+drwxrwxrwx   - training training          0 2020-05-08 04:02 s3a://training-coursera2/tbm_sf_la/south
+\end{lstlisting}
+
+\noindent
+There are three different sub-directories in the bucket named training-coursera2, which are central, north, and south. Next, let's find out what is inside these three directories.
+
+\begin{lstlisting}
+[training@localhost ~]$ hdfs dfs -cat s3a://training-coursera2/tbm_sf_la/central/hourly_central.csv | head
+\end{lstlisting}
+
+\begin{lstlisting}
+tbm,year,month,day,hour,dist,lon,lat
+Shai-Hulud,2020,01,02,09,0.00,-121.345467,37.599819
+Shai-Hulud,2020,01,02,10,4.90,999999,999999
+Shai-Hulud,2020,01,02,11,9.79,999999,999999
+Shai-Hulud,2020,01,02,12,14.69,999999,999999
+Shai-Hulud,2020,01,02,13,19.59,999999,999999
+\end{lstlisting}
+
+\noindent
+As we can see, there is a csv file called hourly\_central.csv inside of the sub-directory central. This csv file has a column header, it is comma delimited, and it treats NULL values as 999999. We need to convert this 999999 back to NULL after we migrate it into HDFS.\\
+
+\noindent
+Next, let's find out what is inside north sub-directory.
+\begin{lstlisting}
+[training@localhost ~]$ hdfs dfs -cat s3a://training-coursera2/tbm_sf_la/north/hourly_north.csv | head
+\end{lstlisting}
+
+\begin{lstlisting}
+Bertha II,2020,01,02,09,0.00,-121.345947,37.600201
+Bertha II,2020,01,02,10,5.00,\N,\N
+Bertha II,2020,01,02,11,10.00,\N,\N
+Bertha II,2020,01,02,12,15.00,\N,\N
+Bertha II,2020,01,02,13,20.00,-121.346107,37.600319
+\end{lstlisting}
+
+\noindent
+There is also a csv file called hourly\_north.csv inside of the sub-directory central. This csv file doesn't have a column header, it is comma delimited, and it treats NULL values as it is.\\
+
+\noindent
+Next, let's find out what is inside south sub-directory.
+
+\begin{lstlisting}
+[training@localhost ~]$ hdfs dfs -cat s3a://training-coursera2/tbm_sf_la/south/hourly_south.tsv | head
+\end{lstlisting}
+
+\begin{lstlisting}
+Diggy McDigface	2020	01	02	09	0.00	-118.933868	34.949688
+Diggy McDigface	2020	01	02	10	1.16	\N	\N
+Diggy McDigface	2020	01	02	11	2.32	\N	\N
+Diggy McDigface	2020	01	02	12	3.49	\N	\N
+Diggy McDigface	2020	01	02	13	4.65	\N	\N
+\end{lstlisting}
+
+\noindent
+Different from other files, the file called hourly\_south.tsv in the south sub-directory has .tsv extension on it, which means it is tab delimited file, as we can see from the result above. So, we need to treat these three files differently in order to merge them together into one coherent table at the end.\\
+
+\noindent
+\textbf{Creating Three Tables in HDFS Dig Database Based on Three Files in S3}\\
+
+\noindent
+Next, we want to fetch all of the data from the cloud and migrate them into clusters. The database in the HDFS to store the tables for these data is called dig. However, we need to create a separate table for each of these three files because they have different formats.\\
+
+\noindent
+First, let's create a table for hourly\_central.csv file in HDFS and put the content of the data to the newly created table. In order to skip the column header, \textbf{skip.header.line.count} syntax from \textbf{TBLPROPERTIES} will be used. In order to convert 999999 into NULL values, \textbf{serialization.null.format} from \textbf{TBLPROPERTIES} will be used. \\
+\\
+\\
+\\
+
+\begin{lstlisting}
+ CREATE EXTERNAL TABLE dig.hourly_central 
+(tbm STRING, year SMALLINT, month TINYINT, day TINYINT, hour  TINYINT, dist 	DECIMAL(8,2), lon FLOAT, lat FLOAT)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LOCATION 's3a://training-coursera2/tbm_sf_la/central/'
+TBLPROPERTIES ('serialization.null.format' = '999999','skip.header.line.count' = '1');
+\end{lstlisting}
+
+\begin{lstlisting}
+SELECT * FROM dig.hourly_central LIMIT 5;
+\end{lstlisting}
+
+\begin{table}[ht]
+\centering
+\caption{Output of table dig.hourly\_central}
+\label{tab:my-table}
+\begin{tabular}{llllllll}
+{\color[HTML]{000000} tbm} & {\color[HTML]{000000} year} & {\color[HTML]{000000} month} & {\color[HTML]{000000} day} & {\color[HTML]{000000} hour} & {\color[HTML]{000000} dist} & {\color[HTML]{000000} lon} & {\color[HTML]{000000} lat} \\
+{\color[HTML]{000000} Shai-Hulud} & {\color[HTML]{000000} 2020} & {\color[HTML]{000000} 1} & {\color[HTML]{000000} 2} & {\color[HTML]{000000} 9} & {\color[HTML]{000000} 0.00} & {\color[HTML]{000000} -121.3454666} & {\color[HTML]{000000} 37.59981918} \\
+{\color[HTML]{000000} Shai-Hulud} & {\color[HTML]{000000} 2020} & {\color[HTML]{000000} 1} & {\color[HTML]{000000} 2} & {\color[HTML]{000000} 10} & {\color[HTML]{000000} 4.90} & {\color[HTML]{000000} NULL} & {\color[HTML]{000000} NULL} \\
+{\color[HTML]{000000} Shai-Hulud} & {\color[HTML]{000000} 2020} & {\color[HTML]{000000} 1} & {\color[HTML]{000000} 2} & {\color[HTML]{000000} 11} & {\color[HTML]{000000} 9.79} & {\color[HTML]{000000} NULL} & {\color[HTML]{000000} NULL} \\
+{\color[HTML]{000000} Shai-Hulud} & {\color[HTML]{000000} 2020} & {\color[HTML]{000000} 1} & {\color[HTML]{000000} 2} & {\color[HTML]{000000} 12} & {\color[HTML]{000000} 14.69} & {\color[HTML]{000000} NULL} & {\color[HTML]{000000} NULL} \\
+{\color[HTML]{000000} Shai-Hulud} & {\color[HTML]{000000} 2020} & {\color[HTML]{000000} 1} & {\color[HTML]{000000} 2} & {\color[HTML]{000000} 13} & {\color[HTML]{000000} 19.59} & {\color[HTML]{000000} NULL} & {\color[HTML]{000000} NULL} \\
+{\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } &  \\
+{\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } &  \\
+{\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } &  \\
+{\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } &  \\
+{\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & 
+\end{tabular}
+\end{table}
+
+\noindent
+And there we have it. The first tunnel boring machine data in a table and stored in dig database in clusters. Next, let's do the same with hourly\_north.csv. However, since this file doesn't have any column header and the NULL value is already as it is, the syntax will be simpler.\\
+\\
+
+\begin{lstlisting}
+CREATE EXTERNAL TABLE dig.hourly_north 
+(tbm STRING, year SMALLINT, month TINYINT, day TINYINT, hour  TINYINT, dist 	DECIMAL(8,2), lon FLOAT, lat FLOAT)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LOCATION 's3a://training-coursera2/tbm_sf_la/north/';
+\end{lstlisting}
+
+\begin{lstlisting}
+SELECT * FROM dig.hourly_north LIMIT 5;
+\end{lstlisting}
+
+\begin{table}[ht]
+\centering
+\caption{Output of table dig.hourly\_north}
+\label{tab:my-table}
+\begin{tabular}{llllllll}
+{\color[HTML]{000000} tbm} & {\color[HTML]{000000} year} & {\color[HTML]{000000} month} & {\color[HTML]{000000} day} & {\color[HTML]{000000} hour} & {\color[HTML]{000000} dist} & {\color[HTML]{000000} lon} & {\color[HTML]{000000} lat} \\
+{\color[HTML]{000000} Bertha II} & {\color[HTML]{000000} 2020} & {\color[HTML]{000000} 1} & {\color[HTML]{000000} 2} & {\color[HTML]{000000} 9} & {\color[HTML]{000000} 0.00} & {\color[HTML]{000000} -121.3459473} & {\color[HTML]{000000} 37.60020065} \\
+{\color[HTML]{000000} Bertha II} & {\color[HTML]{000000} 2020} & {\color[HTML]{000000} 1} & {\color[HTML]{000000} 2} & {\color[HTML]{000000} 10} & {\color[HTML]{000000} 5.00} & {\color[HTML]{000000} NULL} & {\color[HTML]{000000} NULL} \\
+{\color[HTML]{000000} Bertha II} & {\color[HTML]{000000} 2020} & {\color[HTML]{000000} 1} & {\color[HTML]{000000} 2} & {\color[HTML]{000000} 11} & {\color[HTML]{000000} 10.00} & {\color[HTML]{000000} NULL} & {\color[HTML]{000000} NULL} \\
+{\color[HTML]{000000} Bertha II} & {\color[HTML]{000000} 2020} & {\color[HTML]{000000} 1} & {\color[HTML]{000000} 2} & {\color[HTML]{000000} 12} & {\color[HTML]{000000} 15.00} & {\color[HTML]{000000} NULL} & {\color[HTML]{000000} NULL} \\
+{\color[HTML]{000000} Bertha II} & {\color[HTML]{000000} 2020} & {\color[HTML]{000000} 1} & {\color[HTML]{000000} 2} & {\color[HTML]{000000} 13} & {\color[HTML]{000000} 20.00} & {\color[HTML]{000000} -121.3461075} & {\color[HTML]{000000} 37.60031891} \\
+{\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } &  \\
+{\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } &  \\
+{\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } &  \\
+{\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } &  \\
+{\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & 
+\end{tabular}
+\end{table}
+
+
+
+\noindent
+And the output of the table in dig database is as we expected. Next, let's migrate the hourly\_south.tsv file from cloud. However, since this file has .tsv extension, then we need to adjust the syntax \textbf{ROW FORMAT DELIMITED FIELDS TERMINATED BY} from ',' to '\textbackslash t'\\
+\\
+
+\begin{lstlisting}
+CREATE EXTERNAL TABLE dig.hourly_south 
+(tbm STRING, year SMALLINT, month TINYINT, day TINYINT, hour  TINYINT, dist 		DECIMAL(8,2), lon FLOAT, lat FLOAT)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\t'
+LOCATION 's3a://training-coursera2/tbm_sf_la/south/'
+\end{lstlisting}
+
+\begin{lstlisting}
+SELECT * FROM dig.hourly_south LIMIT 5;
+\end{lstlisting}
+
+\begin{table}[ht]
+\centering
+\caption{Output of the table hourly\_south}
+\label{tab:my-table}
+\begin{tabular}{llllllll}
+{\color[HTML]{000000} tbm} & {\color[HTML]{000000} year} & {\color[HTML]{000000} month} & {\color[HTML]{000000} day} & {\color[HTML]{000000} hour} & {\color[HTML]{000000} dist} & {\color[HTML]{000000} lon} & {\color[HTML]{000000} lat} \\
+{\color[HTML]{000000} Diggy McDigface} & {\color[HTML]{000000} 2020} & {\color[HTML]{000000} 1} & {\color[HTML]{000000} 2} & {\color[HTML]{000000} 9} & {\color[HTML]{000000} 0.00} & {\color[HTML]{000000} -118.9338684} & {\color[HTML]{000000} 34.94968796} \\
+{\color[HTML]{000000} Diggy McDigface} & {\color[HTML]{000000} 2020} & {\color[HTML]{000000} 1} & {\color[HTML]{000000} 2} & {\color[HTML]{000000} 10} & {\color[HTML]{000000} 1.16} & {\color[HTML]{000000} NULL} & {\color[HTML]{000000} NULL} \\
+{\color[HTML]{000000} Diggy McDigface} & {\color[HTML]{000000} 2020} & {\color[HTML]{000000} 1} & {\color[HTML]{000000} 2} & {\color[HTML]{000000} 11} & {\color[HTML]{000000} 2.32} & {\color[HTML]{000000} NULL} & {\color[HTML]{000000} NULL} \\
+{\color[HTML]{000000} Diggy McDigface} & {\color[HTML]{000000} 2020} & {\color[HTML]{000000} 1} & {\color[HTML]{000000} 2} & {\color[HTML]{000000} 12} & {\color[HTML]{000000} 3.49} & {\color[HTML]{000000} NULL} & {\color[HTML]{000000} NULL} \\
+{\color[HTML]{000000} Diggy McDigface} & {\color[HTML]{000000} 2020} & {\color[HTML]{000000} 1} & {\color[HTML]{000000} 2} & {\color[HTML]{000000} 13} & {\color[HTML]{000000} 4.65} & {\color[HTML]{000000} NULL} & {\color[HTML]{000000} NULL}\\
+\end{tabular}
+\end{table}
+.\\
+.\\
+
+\noindent
+\textbf{Creating Final Table tbm\_sf\_la and Merge Three Tables Together}\\
+
+\noindent
+Next, we want to merge all of these three tables together into one table called tbm\_sf\_la. In order to do this, first create an empty table in dig database, and then merge all of the data in three different tables above together using \textbf{UNION ALL} syntax.\\
+
+\begin{lstlisting}
+ CREATE EXTERNAL TABLE dig.tbm_sf_la 
+ 	(tbm STRING, year SMALLINT, month TINYINT, day TINYINT, hour  TINYINT, dist 	DECIMAL(8,2), lon FLOAT, lat FLOAT)
+\end{lstlisting}
+
+\begin{lstlisting}
+INSERT INTO dig.tbm_sf_la
+SELECT * FROM dig.hourly_central
+UNION ALL
+SELECT * FROM dig.hourly_north
+UNION ALL
+SELECT * FROM dig.hourly_south;
+\end{lstlisting}	
+
+\noindent
+And then query the table tbm\_sf\_la.
+
+\begin{lstlisting}
+SELECT tbm, COUNT(*) AS num_rows FROM dig.tbm_sf_la GROUP BY tbm ORDER BY tbm;
+\end{lstlisting}
+
+\begin{table}[ht]
+\centering
+\caption{Output of table tbm\_sf\_la}
+\label{tab:my-table}
+\begin{tabular}{llllllll}
+{\color[HTML]{000000} tbm} & {\color[HTML]{000000} num\_rows} & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } \\
+{\color[HTML]{000000} Bertha II} & {\color[HTML]{000000} 91619} & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } \\
+{\color[HTML]{000000} Diggy McDigface} & {\color[HTML]{000000} 93163} & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } \\
+{\color[HTML]{000000} Shai-Hulud} & {\color[HTML]{000000} 94237} & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } \\
+{\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } & {\color[HTML]{000000} } 
+\end{tabular}
+\end{table}
+
+\noindent
+And there we have the final result of a table stored in HDFS consisting the merge of three different files with three different formats using SQL statement.\\
+
+\end{document}
