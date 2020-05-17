@@ -1,0 +1,409 @@
+---
+title: "Bayesian Regression for Movie Prediction"
+output: 
+  html_document: 
+    toc: yes
+    toc_float: true
+    toc_collapsed: true
+  toc_depth: 3
+  number_sections: true
+  theme: lumen
+---
+
+The purpose of this project is to build multiple regression model with Bayesian approach to predict the audience score from Rotten Tomatoes based on several explanatory variables.
+
+***
+
+## Data and Research Question
+
+The data used for this project was taken from IMDB APIs, which contains a list of movies produced before 2016. In total there are 651 list of randomly sampled movies with 32 features.
+
+Within this project, the main research question that will be answered is about the audience score of a movie on Rotten Tomatoes. Thus, the audience score variable `audience_score` will be the response variable and then, several explanatory variables will be used in order to build linear regression model based on Bayesian approach. In the end, several predictions about the audience score of the movies that have been released in the later year and are not included in the dataset will be conducted.
+
+First, data manipulation method to extract new feature will be conducted. Next, basic exploratory data analysis to check variables' summary statistics will be examined. Then, the selection method based on Bayesian Information Criterion (BIC) will be used to build multiple linear regression model. Finally, the regression model will be used to predict several out-of-sample movies.
+
+*******************************
+
+## Scope of Inference
+Since the list of movies is randomly sampled, then we can agree that the generalizabity of the data can be justified. However, since there is no random assignment, then the causality can't be drawn from the data. All of the information that can be gained are only in the scope of correlation or association.
+
+******************************
+
+
+## Data Manipulation
+
+In this section, we want to extract new features based on the original dataset to be included as explanatory variables to build multiple regression model. Before we start to extract new feature, let's import all of the relevant libraries and load the data.
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+library(statsr)
+library(BAS)
+library(lattice)
+library(stringr)
+library(gridExtra)
+library(tidyselect)
+library(broom)
+```
+```{r load-data}
+load("movies.Rdata")
+```
+### First New Feature: Feature Film
+
+The first new variable that will be extracted is the feature film, `feature_film`. This feature is derived from variable `title_type` from the dataset. `feature_film` is a categorical variable with two levels: yes or no. 'Yes' if the type of the movie is feature film and 'No' if otherwise. Let's create the new dataset.
+
+```{r}
+movies <- movies %>% mutate(feature_film= if_else(title_type == 'Feature Film','Yes','No'))
+```
+
+### Second New Feature: Drama
+
+The second new feature is drama,`drama`, which is extracted from the genre variable, `genre` in the original dataset. The new variable `drama` is a categorical variable with two levels: yes or no, with 'Yes' if a movie has drama genre and 'No' if otherwise.
+
+```{r}
+movies <- movies %>% mutate(drama = if_else(genre == 'Drama','Yes','No'))
+```
+
+### Third New Feature: MPAA Rating
+
+The third new feature is the type of MPAA rating a movie got, `mpaa_rating_R`, which is extracted from `mpaa_rating` variable from the original dataset. The new feature `mpaa_rating_R` is a categorical variable with two levels: yes or no, with 'Yes' if a movie has an R rating and 'No' if otherwise.
+
+```{r}
+movies <- movies %>% mutate(mpaa_rating_R = if_else(mpaa_rating == 'R','Yes','No'))
+```
+
+### Fourth New Feature: Movie Release Month
+
+The last new feature that will be generated is based on movie release month, `thtr_rel_month`. There are two new features that will be extracted. The first one is `oscar_season`, which is a categorical variable with two levels: yes or no, with 'Yes' if a movie release month is in Oscar season (October, November, or December) and 'No' if otherwise.
+
+```{r}
+movies <- movies %>% mutate(oscar_season = if_else(thtr_rel_month == '10' | thtr_rel_month == '11' | thtr_rel_month == '12','Yes','No'))
+```
+
+Next, the new feature that will be extracted is `summer_season`, which is also a categorical variable with two levels: yes or no, with 'Yes' if a movie is released in May, June, July, or August and 'No' if otherwise.
+
+```{r}
+movies <- movies %>% mutate(summer_season = if_else(thtr_rel_month == '5' | thtr_rel_month == '6' | thtr_rel_month == '7','Yes','No'))
+```
+
+Finally, before we continue with exploratory data analysis, we want to know how many rows are there in the movies dataset which contains missing values. In order to know this information, we need to do the following syntax.
+
+```{r}
+sum(apply(movies, 1, anyNA))
+```
+
+As we can see, there are in total 32 rows in the dataset in which at least one of the column contains missing values. Since we have 651 rows in total, then these 32 rows only represent a tiny portion of the data, just about 5%. Hence, although we can impute these missing values, but we could also neglect these rows in order to get the consistent data for linear regression model.
+
+```{r}
+movies <- na.omit(movies)
+```
+
+***
+
+## Exploratory Data Analysis
+
+After extracting new feature, now let's do some basic exploratory data analysis (EDA) regarding the audience score, which will be the response variable for the multiple regression model, and the new features that will be included as the explanatory variables in the regression model. First, let's visualize the relationship between audience score in Rotten Tomatoes, `audience_score`, with `feature_film` variable.
+
+```{r, fig.align='center',fig.width = 10, fig.height=6}
+ggplot(data = movies, aes(x = factor(feature_film), y = audience_score, fill = (factor(feature_film)))) +
+       geom_boxplot() +
+ theme(legend.position = "none") +
+      labs(
+        x = "Feature Film?", y = "Audience Score")
+```
+
+Now, let's take a look at the summary statistics of the plot above.
+
+```{r}
+movies %>% group_by(feature_film) %>%
+           summarise(count=n())
+```
+
+We can see there that the movie that can be classified as Feature Film dominates the proportion in this variable. However, by looking at the box-plots above, we can also see that the non-feature movie have a narrow variability and higher median of audience score. Meanwhile, feature film has a wide range with the median of audience score around 65.
+
+Next, we want to take a look of the box-plots of our second new feature, which is `drama`.
+
+```{r, fig.align='center',fig.width = 10, fig.height=6}
+ggplot(data = movies, aes(x = factor(drama), y = audience_score, fill = (factor(drama)))) +
+       geom_boxplot() +
+ theme(legend.position = "none") +
+      labs(
+        x = "Drama Film?", y = "Audience Score")
+```
+
+Now let's take a look of the proportion between drama movie and non-drama movie in our dataset.
+
+```{r}
+movies %>% group_by(drama) %>%
+           summarise(count=n())
+```
+We can see from the result above that the proportion of the movies in our dataset is more or less balanced. This means that there are almost 50% proportion that the movies in the dataset are drama movie. By looking at the box-plots, it seems like both categories have more or less same range. However, the movies with drama genre have much narrower IQR compared to movies with other genre, which means that the movie with drama genre have audience scores which are much more dense and homogeneous in-and-around the median.
+
+
+Next, let's check the third new feature, which is the MPAA rating, `mpaa_rating_r`.
+
+```{r, fig.align='center',fig.width = 10, fig.height=6}
+ggplot(data = movies, aes(x = factor(mpaa_rating_R), y = audience_score, fill = (factor(mpaa_rating_R)))) +
+       geom_boxplot() +
+ theme(legend.position = "none") +
+      labs(
+        x = "R-rated movie?", y = "Audience Score")
+```
+Now let's see the summary of the proportion between two categories.
+
+```{r}
+movies %>% group_by(mpaa_rating_R) %>%
+           summarise(count=n())
+```
+Same as our second new feature, `drama`, we also have a balanced proportion in this third feature. This means that about 50% of the movies in the dataset have an R rating from MPAA. From the box-plots above, we can also see that the summary statistics of both categories are similar with each other, from their median, IQR, as well as their range. So, it seems like that there is a weak correlation between the MPAA rating of the movie with its audience score.
+
+Next, let's take a look at the fourth new feature, which is `oscar_season` and `summer_season`
+
+```{r, fig.align='center',fig.width = 10, fig.height=6}
+oscar <- ggplot(data = movies, aes(x = factor(oscar_season), y =                     audience_score, fill = (factor(oscar_season)))) +
+         geom_boxplot() +
+         theme(legend.position = "none") +
+         labs(
+         x = "Oscar Season?", y = "Audience Score")
+
+summer <- ggplot(data = movies, aes(x = factor(summer_season), y =                    audience_score, fill = (factor(summer_season)))) +
+         geom_boxplot() +
+         theme(legend.position = "none") +
+         labs(
+         x = "Summer Season?", y = "Audience Score")
+
+grid.arrange(oscar, summer, nrow = 1)
+
+```
+Now let's see the proportion of the movie in `oscar_season` variable.
+```{r}
+movies %>% group_by(oscar_season) %>%
+           summarise(count=n())
+```
+From the proportion above, we can see that the proportion of the movies that have been released in non-oscar season (October-December) is much larger compared to the movies  released in an oscar season. However, they have similar variability and range, but the movies released in the oscar season have higher median as well as IQR. This means that the movie released in oscar season has a higher tendency to have better audience score.
+
+Next, let's see the proportion of the movie in `summer_season` variable.
+```{r}
+movies %>% group_by(summer_season) %>%
+           summarise(count=n())
+```
+The proportion of the movie in the `summer_movie` is almost the same with the one that we have seen in `oscar_movie`. The range or variability of both categories looks similar and the median is also similar. However, movie that has been released in the summer time has lower IQR compared to movie that has been released in another time.   
+
+***
+
+## Bayesian Multiple Regression
+
+In this section, multiple regression based on Bayesian approach will be built in order to predict the audience score on Rotten Tomatoes. In total, there are 16 variables that will be considered as explanatory variables in the regression model. These variables are:
+
+* `feature_film`: new feature, whether a movie is classified as feature movie or not.
+* `drama`: new feature, whether a movie is classified as drama or not.
+* `runtime`: the runtime of the movie.
+* `mpaa_rating_R`: new feature, whether a movie is rated R or not.
+* `thtr_rel_year`: the released year of a  movie.
+* `oscar_season`: new feature, whether a movie is released in an Oscar season or not.
+* `summer_season`: new feature, whether a movie is released in a summer season or not.
+* `imdb_rating`: movie rating on IMDB.
+* `imdb_num_votes`: number of votes in a movie on IMDB.
+* `critics_score`: critics score on Rotten Tomatoes.
+* `best_pic_nom`: whether a movie was nominated for best picture.
+* `best_pic_win`: whether a movie won a best picture.
+* `best_actor_win`: whether the actor in a movie won best actor.
+* `best_actress_win`: whether the actress in a movie won the best actor.
+* `best_dir_win`: whether the directer of a movie won the best director.
+* `top200_box`: whether a movie was listed in the top 200 list of BoxOfficeMojo.
+
+Next, let's create a new data containing only the variables listed above and the response variable, which is `audience_score`.
+
+```{r}
+movie_variable <- movies %>% select(feature_film, drama, runtime, mpaa_rating_R, thtr_rel_year, oscar_season, summer_season, imdb_rating, imdb_num_votes, critics_score, best_pic_nom, best_pic_win, best_actor_win, best_actress_win, best_dir_win, top200_box, audience_score)
+```
+
+### Model Selections
+
+Next, we want to know which combinations of all of the considered variables will yield to the best linear model based on Bayesian approach. In order to do this, we will use Bayesian Information Criterion (BIC) as the main metrics. For the model selections approach, two different methods will be used to find the best model. First, the backward elimination approach will be conducted and second, the BAS package will be used. Then, we want to check if this two approach yield to the same model. Let's first use the backward elimination first.
+
+#### Backward Elimination
+With backward elimination, we will start from the full model with all possible explanatory variables and then drop the variable one by one. In each step, the BIC will be investigated and the model with the lowest BIC will be used for the next step. 
+
+First, calculate the row of the variables (number of samples).
+```{r}
+n = nrow(movie_variable)
+```
+
+Then, build linear regression model with all possible predictors.
+```{r}
+m1 <- lm(audience_score~ . -audience_score, data=movie_variable)
+```
+
+Then, perform BIC backward elimination.
+```{r}
+m1.step = step(m1, k=log(n))   
+```
+
+In the summary above, note that AIC should be interpreted as BIC since in the step function, $k$ has been defined as $log(n)$, which is the penalty term for BIC rather than AIC. The formula of the relationship between BIC and natural log of number of sample can be seen in the following:
+
+$$ BIC = -2*ln(likelihood) +(p+1)*ln(n)$$
+with $p+1$ is the total number of parameters.
+
+As the summary, we end up with the BIC of 2891 and at the end, we have a model with three explanatory variables, which are `runtime`, `imdb_rating`, and `critics-score`, to predict the audience score.
+
+#### BAS Package
+
+Now let's take a look at the model that we will end up with if we use the BAS package.
+```{r}
+m2 = bas.lm(audience_score ~ . -audience_score, data = movie_variable,
+                 prior = "BIC", modelprior = uniform())
+
+m2
+```
+
+From summary above, we can see the marginal posterior probabilities for each of the explanatory variable. Next, let's use `logmarg` inside of the linear model to find out the log of marginal likelihood of each model after seeing the data. Finally, the model with the largest marginal likelihood, which in turn has the smallest BIC, can be determined.
+```{r}
+best = which.max(m2$logmarg)
+
+bestmodel = m2$which[[best]]
+bestmodel
+```
+There we find that the model with smallest BIC consists of the intercept (index 0) and three other explanatory variables which occupied the index 3, 8, and 10 from summary above. These three predictors correspond to `runtime`, `imdb_rating`, and `critics_score`. 
+
+It can be concluded that we ended up with the same model considering two different approaches.
+
+
+### Model Diagnostics
+
+Next, we want to check the error criteria for our model to find out whether our model is valid or not. The conditions that will be checked are the linearity and variability of the errors, and the normality of the error.
+
+First, let's build the regression model with the  recommended predictors we obtained from BIC.
+
+```{r}
+bayes_model = lm(audience_score~runtime+imdb_rating+critics_score, data=movie_variable)
+
+```
+
+```{r}
+bayes_model_aug <- augment(bayes_model)
+```
+
+Then, let's create a plot visualizing the fitted error vs the residual error of the model.
+
+```{r, fig.align='center',fig.width = 10, fig.height=6}
+ggplot(data = bayes_model_aug, aes(x = .fitted, y = .resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(x = "Fitted values", y = "Residuals")
+```
+From the plot above, we can see that although there are few strong outliers which produce such a massive deviation in the error plot. Let's check the normality of residuals before we draw any conclusion based on this. We can investigate it with histogram and QQ plot.
+
+```{r, fig.align='center',fig.width = 10, fig.height=6}
+ggplot(data = bayes_model_aug, aes(x = .resid)) +
+  geom_histogram(binwidth = 10) +
+  xlab("Residuals")
+```
+```{r, fig.align='center',fig.width = 10, fig.height=6}
+ggplot(bayes_model_aug) +
+  geom_qq(aes(sample = .std.resid)) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  labs(x = "Theoretical quantiles", y = "Standardized residuals")
+```
+
+From the QQ plot above, we can see that we have few strong deviations in both end of the tails caused by the outliers, which makes the normality of the error is questionable. In order to reduce the skewness of the outliers, let's apply Weighted Least Square method to the model.
+```{r}
+wls       <- 1/fitted( lm(abs(residuals(bayes_model))~fitted(bayes_model)))^2
+
+bayes_model_w = lm(audience_score~runtime+imdb_rating+critics_score, data=movie_variable, weights =wls)
+```
+Then, let's visualize the histogram and the QQ plot.
+
+```{r, fig.align='center',fig.width = 10, fig.height=6}
+
+ggplot(data = bayes_model_w, aes(x = .resid)) +
+  geom_histogram(binwidth = 10) +
+  xlab("Residuals")
+```
+```{r, fig.align='center',fig.width = 10, fig.height=6}
+bayes_model_w_aug <- augment(bayes_model_w)
+ggplot(bayes_model_w_aug) +
+  geom_qq(aes(sample = .std.resid)) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  labs(x = "Theoretical quantiles", y = "Standardized residuals")
+```
+Now we can see that the QQ plot of weighted regression model yields to a much better QQ plot, in which all the residual points now follow the normality line. Hence, we can conclude that the normality criteria is satisfied by the model.
+
+### Coefficient Estimates
+
+Next after we proved that our model fulfills model diagnostics criteria, let's observe the posterior coefficient of the linear model.
+
+```{r}
+fin_bayes_model = bas.lm(audience_score~ runtime+imdb_rating+critics_score, data=movie_variable, weights = wls)
+
+coef(fin_bayes_model)
+
+```
+```{r, fig.align='center',fig.width = 10, fig.height=6}
+plot(coef(fin_bayes_model), subset = 2:4, ask = F)
+```
+
+From the distribution plot above, we can see that the distribution conforms with what we have seen in the summary table of marginal posterior probabilities of each coefficient. For example, the `critics_score` variable has a posterior mean 0.056 with posterior standard error of 0.0211.
+
+Aside of the posterior probability, we can also compute the 95% credible interval for the coefficients.
+
+```{r}
+confint(coef(fin_bayes_model), parm = 2:4)
+```
+
+From the 95% credible interval above, we can say that given the data, there is 95% chance that the audience score in Rotten Tomatoes decreases by 0.047 to 0.069 with one additional increase of runtime; or there is 95% chance that the audience score in Rotten Tomatoes increases by 15.64 to 17.7 with one additional increase of IMDB rating.
+
+## Predicting Audience Score of Out-Of-Sample Movies
+
+Next, we want to use the linear model to predict 3 out-of-sample movies. The movies that will be predicted are Dunkirk, Logan, and Glass.
+
+Let's define all of the relevat attributes in each movie, in which the data have been gathered from IMDB (runtime and IMDB rating) and Rotten Tomatoes (critics_score)
+```{r}
+Dunkirk <- data.frame(runtime=106, imdb_rating=7.9, critics_score=93)
+Logan <- data.frame(runtime=137, imdb_rating=8.1, critics_score=93)
+Glass <- data.frame(runtime=129, imdb_rating=6.7, critics_score=37)
+```
+
+Next, let's predict the audience score of each movie in Rotten Tomatoes.
+
+### Dunkirk
+```{r}
+dunkirk_pred <- predict(fin_bayes_model, Dunkirk, estimator = "BPM", se.fit=TRUE)
+dunkirk_credin <- confint(dunkirk_pred, estimator = "BPM")
+dunkirk_opt_bpm <- which.max(dunkirk_pred$fit)
+dunkirk_credin[dunkirk_opt_bpm, ]
+```
+From the linear model, we can see that the model predict that Dunkirk has the audience score on Rotten Tomatoes = 87.8. Also, from the credible interval it can be concluded that there is 95% chance that the audience score on Rotten Tomatoes for Dunkirk will be in between 71.69 to 103.90. The actual audience score on Rotten Tomatoes is 81, so the number still lies in between the aforementioned credible interval.
+
+### Logan
+```{r}
+logan_pred <- predict(fin_bayes_model, Logan, estimator = "BPM", se.fit=TRUE)
+logan_credin <- confint(logan_pred, estimator = "BPM")
+logan_opt_bpm <- which.max(logan_pred$fit)
+logan_credin[logan_opt_bpm, ]
+```
+From the linear model, we can see that the model predict that Logan has the audience score on Rotten Tomatoes = 88.96. Also, from the credible interval it can be concluded that there is 95% chance that the audience score on Rotten Tomatoes for Logan will be in between 72.84 to 105.09. The actual audience score on Rotten Tomatoes is 90, so the number also still lies in between the aforementioned credible interval.
+
+### Glass
+
+```{r}
+glass_pred <- predict(fin_bayes_model, Glass, estimator = "BPM", se.fit=TRUE)
+glass_credin <- confint(glass_pred, estimator = "BPM")
+glass_opt_bpm <- which.max(glass_pred$fit)
+glass_credin[glass_opt_bpm, ]
+```
+From the linear model, we can see that the model predict that Glass has the audience score on Rotten Tomatoes = 63.01. Also, from the credible interval it can be concluded that there is 95% chance that the audience score on Rotten Tomatoes for Glass will be in between 46.9 to 79.13. The actual audience score on Rotten Tomatoes is 68, so the number also still lies in between the aforementioned credible interval.
+
+***
+
+## Conclusion
+
+In this project, multiple regression model with Bayesian approach has been modeled with three explanatory variables. The following conclusion can be made:
+
+* The best model with the lowest BIC can be obtained with two different approaches.
+* The best model that already obtained needs to be weighted in order to enforce the normality of the residuals.
+* The linear model can predict different kinds of movie with specific credible interval.
+
+One shortcoming from this project is the fact that not all of the variables that available in the dataset are used to build the regression model. If we use all of the available variables, perhaps we will end up with different model. This also can be considered as further ideas for this project. 
+
+
