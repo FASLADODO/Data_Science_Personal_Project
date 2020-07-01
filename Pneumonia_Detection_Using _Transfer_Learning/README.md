@@ -3,7 +3,7 @@
 ## Objective
 In this project, a convolutional neural network (CNN) in order to predict whether a patient suffers from pneumonia or not based on the X-ray image will be built. In addition to the default model that will be applied, a famous pre-trained CNN architecture, InceptionV3, will also be applied. Then, the accuracy between these two models will be compared against one another.
 
-The dataset that is used for this project was taken from https://data.mendeley.com/datasets/rscbjbr9sj/2. It contains around a thousand of x-ray images of healthy people and people with pneumonia. Before we begin to analyze, let's import all the necessary libraries for this project.
+The dataset that is used for this project was taken from https://data.mendeley.com/datasets/rscbjbr9sj/2. It contains around a thousand of x-ray images of healthy people and people with pneumonia.
 
 After applying transfer learning, below is the example of the result obtained in this project:
 
