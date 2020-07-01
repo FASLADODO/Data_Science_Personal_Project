@@ -10,7 +10,7 @@ Then, different kinds of regularization technique will be applied to see the dif
   <img width="1100" height="80" src="https://github.com/marcellusruben/Data_Science_Personal_Project/blob/master/CNN_for_Hand_Sign_Prediction/images/CNN.png">
 </p>
 
-The dataset consists of 1200 images of hand sign indicates the number of 0 until 5. The visualization of the some images in the dataset can be seen below:
+The dataset consists of 1200 images of hand sign indicates the number of 0 until 5. The visualization of some images in the dataset can be seen below:
 
 <p align="center">
   <img width="1000" height="300" src="https://github.com/marcellusruben/Data_Science_Personal_Project/blob/master/CNN_for_Hand_Sign_Prediction/images/hand.jpg">
