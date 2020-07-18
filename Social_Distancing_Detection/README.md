@@ -7,6 +7,7 @@ The purpose of this project is to build an algorithm to detect whether people ar
 In this project, the pre-trained TensorFlow model, which is Faster R-CNN ResNet trained on MS COCO 2017 dataset will be applied to predict the coordinate of the bounding boxes as well as to predict which object that each bounding box represents. The video used for this project comes from PETS dataset.
 
 Link to PETS dataset: http://www.cvg.reading.ac.uk/PETS2009/a.html#s0
+
 Link to model zoo object detection TensorFlow: https://github.com/tensorflow/models/blob/477ed41e7e4e8a8443bc633846eb01e2182dc68a/object_detection/g3doc/detection_model_zoo.md
 
 Below is the video output of this project.
